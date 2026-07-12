@@ -125,9 +125,16 @@ export function getCurrentCoefficients(): number[] {
     const sessionHistory = getCurrentSessionHistory();
     const numChords = Object.keys(CHORDS_TONE).indexOf(STATE.current_chord) + 1;
 
-    // Collect confusion matrices from most recent sessions, capping at RECENT_IDENTIFICATIONS_LIMIT
+    // Include the live trail first so the very next question responds to a mistake,
+    // then fill the rolling window from newest completed trails.
     const matrices: Record<string, Record<string, number>>[] = [];
     let remaining = RECENT_IDENTIFICATIONS_LIMIT;
+    const currentMatrix = getCurrentProfile().stats.confusion_matrix;
+    const currentCount = countMatrixIdentifications(currentMatrix);
+    if (currentCount > 0) {
+        matrices.push(currentMatrix);
+        remaining -= Math.min(currentCount, remaining);
+    }
 
     for (let i = sessionHistory.length - 1; i >= 0 && remaining > 0; i--) {
         const session = sessionHistory[i];

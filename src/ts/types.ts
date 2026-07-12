@@ -62,6 +62,7 @@ export interface Profile {
     current_chord: string;
     current_instrument: string;
     level_started_at: number;
+    introduced_chords: string[];
 }
 
 export interface AppState {

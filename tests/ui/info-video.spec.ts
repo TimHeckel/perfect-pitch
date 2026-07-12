@@ -22,6 +22,7 @@ test("guide embeds the local Pitch Trail intro without a YouTube link", async ({
   );
   await expect(page.locator("#i-infobox a[href*='youtu']")).toHaveCount(0);
   await expect(page.locator(".guide-video figcaption")).toContainText("22 seconds");
+  await expect(page.getByText("Meet the colors.", { exact: true })).toBeVisible();
 
   const response = await page.request.get("/static/video/pitch-trail-intro.mp4?v=20260712-2");
   expect(response.ok()).toBe(true);

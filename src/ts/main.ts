@@ -2,7 +2,7 @@ import { loadState, getCurrentProfile, getCurrentTargetNumber, isRecent, STATE }
 import {
     playAudio, playFirstAudio, selectFlagWrapper, nextAudio, resetStats, changeSelector,
     changeInstrumentSelector, onTrainerOpen, playChord, getEmojiLock, stopCurrentAudio,
-    _CORRECT_COLOR
+    hearIntroducedColor, completeColorIntroduction, _CORRECT_COLOR
 } from './game';
 import {
     toggleExpansionBar, toggleInfoboxVisibility, toggleStatsHistoryVisibility,
@@ -44,6 +44,8 @@ w.enable_download = enableDownload;
 w.trigger_easter_egg = triggerEasterEgg;
 w.download_state = downloadState;
 w.play_chord = playChord;
+w.hear_introduced_color = hearIntroducedColor;
+w.complete_color_introduction = completeColorIntroduction;
 w.__bsharp_correct_color = () => _CORRECT_COLOR;
 
 const FLAG_BOUNDARY_SLOP_PX = 10;

@@ -40,10 +40,13 @@ test("the internal route follows the fixed cumulative chord order", async ({ pag
   await expect(page.locator("#gray-flag")).toBeVisible();
   await expect(page.locator("#tan-flag")).not.toBeVisible();
   await expect(page.locator("#flag-holder")).toHaveClass(/flags-compact/);
+
+  await setLevel(page, "skyblue");
+  await expect(page.locator("#trail-level-detail")).toHaveText("Open-ended practice · adaptive mix");
 });
 
-test("route starts on day one of the fourteen-day gate", async ({ page }) => {
-  await expect(page.locator("#trail-level-detail")).toHaveText("Day 1 of 14 · adaptive mix");
+test("route starts with an ability-based mastery target", async ({ page }) => {
+  await expect(page.locator("#trail-level-detail")).toHaveText("0 of 3 mastery trails · adaptive mix");
 });
 
 test("header offers exactly two persistent sound buttons", async ({ page, context }) => {
@@ -82,19 +85,26 @@ test("guitar button selects the immediate guitar sample", async ({ page }) => {
   )).toContainEqual(expect.stringContaining("/static/chords/guitar/c4f4a4_yellow.mp3"));
 });
 
-test("a perfect trail advances only after the fourteen-day gate", async ({ page }) => {
+test("three mastered trails add the next color without a calendar gate", async ({ page }) => {
   await page.evaluate(() => {
     const state = JSON.parse(localStorage.getItem("bsharp_state")!);
     const profile = state.profiles[state.current_profile];
-    profile.level_started_at = Math.floor(Date.now() / 1000) - (14 * 24 * 60 * 60);
     profile.stats.correct = 10;
     profile.stats.identifications = 10;
+    profile.stats.confusion_matrix = { red: { red: 5 }, yellow: { yellow: 5 } };
     profile.stats.done = true;
+    const earlierTrail = (offset: number) => ({
+      ...profile.stats,
+      start_time: profile.stats.start_time - offset,
+      updated_time: profile.stats.updated_time - offset,
+    });
     localStorage.setItem("bsharp_state", JSON.stringify(state));
+    localStorage.setItem("bsharp_session_history", JSON.stringify({
+      [profile.id]: { yellow: [earlierTrail(120), earlierTrail(60)] },
+    }));
     sessionStorage.setItem("preserve-state", "true");
   });
   await page.reload();
-  await page.locator("#reset-button").click();
 
   await expect(page.locator("#trail-level-name")).toHaveText("3-color trail");
   await expect(page.locator("#blue-flag")).toBeVisible();
@@ -104,18 +114,30 @@ test("a perfect trail advances only after the fourteen-day gate", async ({ page 
   })).toBe("blue");
 });
 
-test("an imperfect trail stays on the same route after fourteen days", async ({ page }) => {
+test("weak color performance keeps the current adaptive mix", async ({ page }) => {
   await page.evaluate(() => {
     const state = JSON.parse(localStorage.getItem("bsharp_state")!);
     const profile = state.profiles[state.current_profile];
-    profile.level_started_at = Math.floor(Date.now() / 1000) - (14 * 24 * 60 * 60);
-    profile.stats.correct = 9;
+    const perfectTrail = (offset: number) => ({
+      ...profile.stats,
+      start_time: profile.stats.start_time - offset,
+      updated_time: profile.stats.updated_time - offset,
+      correct: 10,
+      identifications: 10,
+      confusion_matrix: { red: { red: 5 }, yellow: { yellow: 5 } },
+      done: true,
+    });
+    profile.stats.correct = 5;
     profile.stats.identifications = 10;
+    profile.stats.confusion_matrix = { red: { red: 5 }, yellow: { red: 5 } };
     profile.stats.done = true;
     localStorage.setItem("bsharp_state", JSON.stringify(state));
+    localStorage.setItem("bsharp_session_history", JSON.stringify({
+      [profile.id]: { yellow: [perfectTrail(120), perfectTrail(60)] },
+    }));
     sessionStorage.setItem("preserve-state", "true");
   });
   await page.reload();
-  await page.locator("#reset-button").click();
   await expect(page.locator("#trail-level-name")).toHaveText("2-color trail");
+  await expect(page.locator("#trail-level-detail")).toContainText("Strengthening weak colors");
 });

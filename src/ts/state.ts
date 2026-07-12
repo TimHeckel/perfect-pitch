@@ -12,6 +12,7 @@ export const GUEST_USER_ID = 100;
 export const SESSION_TIMEOUT_TIME_SECONDS = 60 * 30;
 
 const DEFAULT_CHORD = Object.keys(CHORDS_TONE)[1];
+const DEFAULT_INTRODUCED_CHORDS = Object.keys(CHORDS_TONE).slice(0, 2);
 export const DEFAULT_INSTRUMENT = 'piano_1';
 export const DEFAULT_TARGET_NUMBER = 10;
 export const TRAIL_LENGTH_PRESETS = [5, 10, 15] as const;
@@ -101,6 +102,7 @@ export function newProfile(
         current_chord: DEFAULT_CHORD,
         current_instrument: DEFAULT_INSTRUMENT,
         level_started_at: getCurrentTimestamp(),
+        introduced_chords: [...DEFAULT_INTRODUCED_CHORDS],
     };
 }
 
@@ -138,6 +140,10 @@ export function initializeProfileDefaults(profile: Profile): void {
     }
     if (profile.chord_selection_mode !== 'adaptive') {
         profile.chord_selection_mode = 'adaptive';
+    }
+    if (!Array.isArray(profile.introduced_chords)) {
+        const currentIndex = Object.keys(CHORDS_TONE).indexOf(profile.current_chord);
+        profile.introduced_chords = Object.keys(CHORDS_TONE).slice(0, Math.max(2, currentIndex + 1));
     }
 }
 

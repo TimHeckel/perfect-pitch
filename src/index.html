@@ -110,7 +110,7 @@
             <div class="trail-context" aria-live="polite">
                 <span>Lesson route</span>
                 <strong id="trail-level-name">2-color trail</strong>
-                <small id="trail-level-detail">Day 1 of 14 · adaptive mix</small>
+                <small id="trail-level-detail">0 of 3 mastery trails · adaptive mix</small>
             </div>
         </section>
         <div id="panel-area">
@@ -134,9 +134,9 @@
                 <div class="guide-copy">
                     <p>Pitch Trail follows <a href="https://www.ganbar.us/documents/sakakibara_2012_chord_identification.pdf">Eguchi's Chord Identification method</a>: listen, choose the matching color, and add new chords gradually. See also the <a href="https://ichionkai.co.jp/english4.html">Ichionkai Perfect Pitch Program</a>.</p>
                     <ol class="guide-steps" aria-label="Practice rhythm">
-                        <li><strong>Keep it tiny.</strong><span>Pitch Trail uses a short 10-answer checkpoint.</span></li>
-                        <li><strong>Repeat often.</strong><span>The published method uses several short sessions each day.</span></li>
-                        <li><strong>Earn the next marker.</strong><span>A perfect trail after at least 14 days adds one chord automatically.</span></li>
+                        <li><strong>Meet the colors.</strong><span>Use the music-note explorer to tap red and yellow and learn their sounds.</span></li>
+                        <li><strong>Keep it tiny.</strong><span>Short trails continuously revisit the sounds that need more practice.</span></li>
+                        <li><strong>Grow automatically.</strong><span>Strong recent trails add one new color, with no calendar wait.</span></li>
                     </ol>
                     <p class="attribution-note">Designed for children aged 2–6. Pitch Trail is adapted from the open-source BSharp trainer and CIM Trainer. It is educational practice software, not a medical or developmental guarantee.</p>
                 </div>
@@ -550,6 +550,16 @@
         <div class="trail-marker-play" aria-hidden="true"><i class="fa fa-play"></i></div>
         <h2 id="play-first-title">Play first</h2>
         <button id="play-first-action" type="button" onclick="play_first_audio()">Play sound</button>
+    </dialog>
+
+    <dialog id="color-introduction-dialog" class="color-introduction-dialog" aria-labelledby="color-introduction-title">
+        <p class="dialog-kicker">New trail marker</p>
+        <h2 id="color-introduction-title">Meet a new color</h2>
+        <p id="color-introduction-status">Tap the color to hear its sound.</p>
+        <button id="hear-new-color" class="hear-new-color" type="button" onclick="hear_introduced_color()">
+            <span id="color-introduction-marker" class="color-introduction-marker" aria-hidden="true"></span>
+        </button>
+        <button id="start-new-color-trail" class="primary-action" type="button" onclick="complete_color_introduction()" disabled>Start trail</button>
     </dialog>
 
     <script src="bsharp.js"></script>

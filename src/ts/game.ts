@@ -1,4 +1,4 @@
-import { CHORDS_TONE, FIRST_BLACK_INDEX } from './data';
+import { CHORD_DEFINITIONS, CHORDS_TONE, FIRST_BLACK_INDEX } from './data';
 import { AudioFileInfo } from './types';
 import { randomElem, getCurrentTimestamp } from './utils';
 import {
@@ -9,7 +9,7 @@ import {
 import { getCurrentCoefficients, updateStartTimeIfNeeded, updateStats, normalizeStatsObject } from './stats';
 import { getAudioFiles, audioFileElem, playChordFiles, preloadAudio } from './audio';
 import { populateFlags, updateStatsDisplay, resetCatEmoji, setCatEmoji, setChordDisplayMode, populateProfileUiElements } from './ui';
-import { canAdvanceProfile, getLevelDay, getNextChord, LEVEL_WAIT_DAYS } from './progression';
+import { canAdvanceProfile, getMasteryStatus, getNextChord, MASTERY_TRAILS_REQUIRED } from './progression';
 
 let _COLORS: string[] | null = null;
 let _CHORDS_ON = false;
@@ -28,6 +28,7 @@ let _AUTO_NEXT_TIMER: number | null = null;
 let _QUESTION_STARTED_AT: number | null = null;
 let _QUESTION_CLOCK_TIMER: number | null = null;
 let _TRAIL_NUMBER = 1;
+let _INTRODUCTION_COLOR: string | null = null;
 const QUESTION_TIME_LIMIT_SECONDS = 10;
 export function getTestDeterministicColor(): string | null {
     return (window as unknown as Record<string, unknown>).__bsharp_test_deterministic_color as string | null ?? null;
@@ -189,6 +190,7 @@ export function playAudio(): void {
     const playButton = document.getElementById('play-button');
     if (playButton && playButton.classList.contains('deactivated')) return;
     if (!_CURRENT_AUDIO) return;
+    if (showPendingColorIntroduction()) return;
 
     startQuestionClock();
     playButton?.classList.remove('ready-action');
@@ -234,6 +236,7 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     _EMOJI_LOCK = true;
     updateStartTimeIfNeeded();
     updateStats(_CORRECT_COLOR!, chosenColor);
+    _CURRENT_COEFFICIENTS = null;
     updateStatsDisplay();
     const reachedTarget = getCurrentProfile().stats.identifications >= getCurrentTargetNumber();
 
@@ -332,7 +335,8 @@ export function resetStats(done = true, continuePractice = false): void {
         saveSessionHistory();
     }
     const now = getCurrentTimestamp();
-    if (done && canAdvanceProfile(profile, now)) {
+    const activeColors = getSelectedColors();
+    if (done && canAdvanceProfile(profile, getCurrentSessionHistory(), activeColors)) {
         const nextChord = getNextChord(profile.current_chord);
         if (nextChord) {
             profile.current_chord = nextChord;
@@ -408,10 +412,71 @@ function renderLevel(): void {
     if (trailDetail) {
         const profile = getCurrentProfile();
         const isFinalLevel = getNextChord(profile.current_chord) === null;
-        trailDetail.textContent = isFinalLevel
-            ? 'Final route · adaptive mix'
-            : `Day ${getLevelDay(profile.level_started_at, getCurrentTimestamp())} of ${LEVEL_WAIT_DAYS} · adaptive mix`;
+        if (isFinalLevel) {
+            trailDetail.textContent = 'Open-ended practice · adaptive mix';
+        } else {
+            const mastery = getMasteryStatus(profile, getCurrentSessionHistory(), getSelectedColors());
+            const accuracy = Math.round(mastery.accuracy * 100);
+            if (mastery.completedTrails < MASTERY_TRAILS_REQUIRED) {
+                trailDetail.textContent = `${mastery.completedTrails} of ${MASTERY_TRAILS_REQUIRED} mastery trails · adaptive mix`;
+            } else if (!mastery.allColorsMastered) {
+                trailDetail.textContent = `Strengthening weak colors · ${accuracy}% recent`;
+            } else {
+                trailDetail.textContent = `Building mastery · ${accuracy}% recent`;
+            }
+        }
     }
+}
+
+function showPendingColorIntroduction(): boolean {
+    const profile = getCurrentProfile();
+    const pendingColor = getSelectedColors().find(
+        (color) => !profile.introduced_chords.includes(color),
+    );
+    if (!pendingColor) return false;
+
+    _INTRODUCTION_COLOR = pendingColor;
+    const definition = CHORD_DEFINITIONS.find(({ name }) => name === pendingColor);
+    const display = definition?.display ?? pendingColor;
+    const dialog = document.getElementById('color-introduction-dialog') as HTMLDialogElement | null;
+    const title = document.getElementById('color-introduction-title');
+    const marker = document.getElementById('color-introduction-marker');
+    const hearButton = document.getElementById('hear-new-color');
+    const startButton = document.getElementById('start-new-color-trail') as HTMLButtonElement | null;
+    const status = document.getElementById('color-introduction-status');
+
+    if (title) title.textContent = `Meet ${display.toLowerCase()}`;
+    if (marker) marker.className = `color-introduction-marker ${pendingColor}`;
+    hearButton?.setAttribute('aria-label', `Hear the ${display.toLowerCase()} trail sound`);
+    if (startButton) startButton.disabled = true;
+    if (status) status.textContent = 'Tap the color to hear its sound.';
+    if (dialog && !dialog.open) dialog.showModal();
+    return true;
+}
+
+export function hearIntroducedColor(): void {
+    if (!_INTRODUCTION_COLOR) return;
+    playChord(_INTRODUCTION_COLOR);
+    const marker = document.getElementById('color-introduction-marker');
+    marker?.classList.remove('flag-bounce');
+    if (marker) void marker.offsetWidth;
+    marker?.classList.add('flag-bounce', 'heard');
+    const startButton = document.getElementById('start-new-color-trail') as HTMLButtonElement | null;
+    if (startButton) startButton.disabled = false;
+    const status = document.getElementById('color-introduction-status');
+    if (status) status.textContent = 'That sound now joins the trail.';
+}
+
+export function completeColorIntroduction(): void {
+    if (!_INTRODUCTION_COLOR) return;
+    const profile = getCurrentProfile();
+    if (!profile.introduced_chords.includes(_INTRODUCTION_COLOR)) {
+        profile.introduced_chords.push(_INTRODUCTION_COLOR);
+        saveState();
+    }
+    _INTRODUCTION_COLOR = null;
+    (document.getElementById('color-introduction-dialog') as HTMLDialogElement | null)?.close();
+    playAudio();
 }
 
 export function changeInstrumentSelector(to?: string): void {

@@ -22,6 +22,7 @@ describe('initializeProfileDefaults', () => {
         expect(partial.persist_reaction_face).toBe(true);
         expect(partial.current_instrument).toBe(DEFAULT_INSTRUMENT);
         expect(partial.level_started_at).toEqual(expect.any(Number));
+        expect(partial.introduced_chords).toEqual(['red', 'yellow']);
         expect(partial.chord_selection_mode).toBe('adaptive');
     });
 
