@@ -9,10 +9,14 @@ vi.stubGlobal('localStorage', {
     clear: () => { for (const k in store) delete store[k]; },
 });
 
-import { DEFAULT_INSTRUMENT, DEFAULT_TARGET_NUMBER, initializeProfileDefaults } from '../../src/ts/state';
+import { DEFAULT_INSTRUMENT, DEFAULT_TARGET_NUMBER, initializeProfileDefaults, newProfile } from '../../src/ts/state';
 import type { Profile } from '../../src/ts/types';
 
 describe('initializeProfileDefaults', () => {
+    it('starts a new learner with no colors assumed to be known', () => {
+        expect(newProfile('New learner', 'fa-user', 2).introduced_chords).toEqual([]);
+    });
+
     it('fills in missing fields with defaults', () => {
         const partial = { name: 'Test', icon: 'fa-user', id: 1 } as unknown as Profile;
         initializeProfileDefaults(partial);

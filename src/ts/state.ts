@@ -6,13 +6,14 @@ export const STATE_KEY = 'bsharp_state';
 export const SESSION_HISTORY_KEY = 'bsharp_session_history';
 const LEGACY_STATE_KEY = 'cim_state';
 const LEGACY_SESSION_HISTORY_KEY = 'cim_session_history';
+const INFO_SEEN_KEY = 'pitchtrail_info_seen_v1';
 
 const LEGACY_USER_ID = 0;
 export const GUEST_USER_ID = 100;
 export const SESSION_TIMEOUT_TIME_SECONDS = 60 * 30;
 
 const DEFAULT_CHORD = Object.keys(CHORDS_TONE)[1];
-const DEFAULT_INTRODUCED_CHORDS = Object.keys(CHORDS_TONE).slice(0, 2);
+const DEFAULT_INTRODUCED_CHORDS: string[] = [];
 export const DEFAULT_INSTRUMENT = 'piano_1';
 export const DEFAULT_TARGET_NUMBER = 10;
 export const TRAIL_LENGTH_PRESETS = [5, 10, 15] as const;
@@ -158,6 +159,11 @@ export function loadState(): void {
     if (state === null) {
         const newProfiles: Record<number, Profile> = {};
         newProfiles[GUEST_USER_ID] = newProfile('Guest', 'fa-user', GUEST_USER_ID);
+        // A browser that has already completed the guide is an existing learner.
+        // Preserve the old two-color start for them; truly new learners hear both.
+        if (localStorage.getItem(INFO_SEEN_KEY) === 'true') {
+            newProfiles[GUEST_USER_ID].introduced_chords = Object.keys(CHORDS_TONE).slice(0, 2);
+        }
         state = {
             profiles: newProfiles,
             current_chord: DEFAULT_CHORD,

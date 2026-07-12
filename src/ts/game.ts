@@ -430,9 +430,10 @@ function renderLevel(): void {
 
 function showPendingColorIntroduction(): boolean {
     const profile = getCurrentProfile();
-    const pendingColor = getSelectedColors().find(
+    const pendingColors = getSelectedColors().filter(
         (color) => !profile.introduced_chords.includes(color),
     );
+    const pendingColor = pendingColors[0];
     if (!pendingColor) return false;
 
     _INTRODUCTION_COLOR = pendingColor;
@@ -448,7 +449,10 @@ function showPendingColorIntroduction(): boolean {
     if (title) title.textContent = `Meet ${display.toLowerCase()}`;
     if (marker) marker.className = `color-introduction-marker ${pendingColor}`;
     hearButton?.setAttribute('aria-label', `Hear the ${display.toLowerCase()} trail sound`);
-    if (startButton) startButton.disabled = true;
+    if (startButton) {
+        startButton.disabled = true;
+        startButton.textContent = pendingColors.length > 1 ? 'Next color' : 'Start trail';
+    }
     if (status) status.textContent = 'Tap the color to hear its sound.';
     if (dialog && !dialog.open) dialog.showModal();
     return true;
@@ -475,6 +479,7 @@ export function completeColorIntroduction(): void {
         saveState();
     }
     _INTRODUCTION_COLOR = null;
+    if (showPendingColorIntroduction()) return;
     (document.getElementById('color-introduction-dialog') as HTMLDialogElement | null)?.close();
     playAudio();
 }

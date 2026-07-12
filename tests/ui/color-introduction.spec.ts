@@ -1,5 +1,34 @@
 import { expect, test } from '@playwright/test';
 
+test('a new learner hears both starting colors before the first trail', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.clear();
+  });
+  await page.goto('/');
+  await page.evaluate(() => {
+    (window as unknown as { close_panel: () => void }).close_panel();
+  });
+
+  await page.locator('#play-button').click();
+  const dialog = page.locator('#color-introduction-dialog');
+  await expect(dialog.locator('h2')).toHaveText('Meet red');
+  await expect(page.locator('#start-new-color-trail')).toHaveText('Next color');
+
+  await page.locator('#hear-new-color').click();
+  await page.locator('#start-new-color-trail').click();
+  await expect(dialog.locator('h2')).toHaveText('Meet yellow');
+  await expect(page.locator('#start-new-color-trail')).toHaveText('Start trail');
+  await expect(page.locator('#start-new-color-trail')).toBeDisabled();
+
+  await page.locator('#hear-new-color').click();
+  await page.locator('#start-new-color-trail').click();
+  await expect(dialog).not.toBeVisible();
+  await expect.poll(() => page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('bsharp_state')!);
+    return state.profiles[state.current_profile].introduced_chords;
+  })).toEqual(['red', 'yellow']);
+});
+
 test('a newly unlocked color is heard before it joins practice', async ({ page }) => {
   await page.addInitScript(() => {
     const now = Math.floor(Date.now() / 1000);
