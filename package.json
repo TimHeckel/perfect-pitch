@@ -1,0 +1,33 @@
+{
+  "name": "perfect-pitch",
+  "version": "1.0.0",
+  "description": "A free, family-friendly perfect pitch trainer for the web",
+  "private": true,
+  "scripts": {
+    "build": "make build",
+    "check": "npm run check:app && npm run check:worker",
+    "check:app": "tsc --noEmit",
+    "check:worker": "tsc --noEmit -p worker/tsconfig.json",
+    "dev": "wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "test": "make test-unit",
+    "test:ui": "make test-ui",
+    "test:cloud": "playwright test --config tests/playwright.cloud.config.ts",
+    "build:guitar-samples": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON sample-source/guitar/build-guitar-samples.ts --all",
+    "build:guitar-chords": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON sample-source/guitar/build-guitar-chords.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.1",
+    "@cloudflare/workers-types": "^5.20260712.1",
+    "@types/node": "^25.2.1",
+    "esbuild": "^0.24.0",
+    "pitchfinder": "^2.3.4",
+    "pngjs": "^7.0.0",
+    "sass": "^1.80.0",
+    "typescript": "^5.6.0",
+    "vitest": "^4.0.18",
+    "wrangler": "^4.110.0"
+  }
+}

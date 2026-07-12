@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+playwright-report/
+test-results/
+test-results/
+tests/screenshot/*-snapshots/
+.DS_Store
+.idea/
+icon-drafts/
+tmp/
+sample-source/**/raw/
+**/prompt.md
+AGENTS.md
+CLAUDE.md
