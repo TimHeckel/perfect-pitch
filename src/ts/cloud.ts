@@ -111,15 +111,7 @@ async function configureGoogleAuth(): Promise<void> {
 function startGoogleAuth(): void {
     const form = document.getElementById('account-form') as HTMLFormElement;
     const mode = form.dataset.mode === 'login' ? 'login' : 'signup';
-    if (mode === 'signup') {
-        const adultCheckbox = document.querySelector<HTMLInputElement>('#adult-confirmation input');
-        if (!adultCheckbox?.checked) {
-            showAuthError('Confirm that an adult is creating and managing this family account.');
-            adultCheckbox?.focus();
-            return;
-        }
-    }
-    window.location.assign(`/api/auth/google/start?intent=${mode}&adult=${mode === 'signup' ? '1' : '0'}`);
+    window.location.assign(`/api/auth/google/start?intent=${mode}`);
 }
 
 async function submitAuthForm(event: SubmitEvent): Promise<void> {

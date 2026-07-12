@@ -51,10 +51,21 @@ test('Google sign-in starts a state- and PKCE-protected web flow', async ({ page
   expect(await status.json()).toEqual({ configured: true });
 
   await page.getByRole('button', { name: 'Save progress' }).click();
-  await page.getByRole('checkbox').check();
+  await expect(page.getByRole('checkbox')).not.toBeChecked();
   await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible();
 
-  const response = await page.request.get('/api/auth/google/start?intent=signup&adult=1', {
+  const googleStart = page.waitForRequest((request) =>
+    request.url().includes('/api/auth/google/start'),
+  );
+  await page.route('**/api/auth/google/start?intent=signup', (route) =>
+    route.fulfill({ status: 204 }),
+  );
+  await page.getByRole('button', { name: 'Continue with Google' }).click();
+  const browserRequest = new URL((await googleStart).url());
+  expect(browserRequest.searchParams.get('intent')).toBe('signup');
+  expect(browserRequest.searchParams.has('adult')).toBe(false);
+
+  const response = await page.request.get('/api/auth/google/start?intent=signup', {
     maxRedirects: 0,
   });
   expect(response.status()).toBe(302);

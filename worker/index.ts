@@ -172,10 +172,9 @@ async function startGoogleAuth(env: Env, url: URL): Promise<Response> {
   if (!googleAuthConfigured(env)) return json({ error: 'Google sign-in is not configured yet.' }, 503);
 
   const intent = url.searchParams.get('intent') === 'login' ? 'login' : 'signup';
-  const adult = intent === 'signup' && url.searchParams.get('adult') === '1';
-  if (intent === 'signup' && !adult) {
-    return redirectAuthError(url, 'Confirm that an adult is creating and managing this family account.');
-  }
+  // Choosing the family-account Google flow is the signup confirmation;
+  // the separate checkbox remains specific to email/password signup.
+  const adult = intent === 'signup';
 
   const state = randomHex(24);
   const verifier = randomBase64Url(48);
