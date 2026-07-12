@@ -1,7 +1,7 @@
 {
   "name": "perfect-pitch",
   "version": "1.0.0",
-  "description": "A free, family-friendly perfect pitch trainer for the web",
+  "description": "Pitch Trail: free color-chord adventures for little ears",
   "private": true,
   "scripts": {
     "build": "make build",

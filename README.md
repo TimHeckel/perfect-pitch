@@ -1,8 +1,8 @@
-# Perfect Pitch
+# Pitch Trail
 
-A free, family-friendly web app for practicing chord identification with young children. Perfect Pitch uses the Eguchi color-chord method: a child hears a chord, chooses its color, and gradually adds new chords as accuracy improves.
+A free, family-friendly web app for practicing chord identification with young children. Pitch Trail uses the Eguchi color-chord method: a child hears a chord, chooses its trail color, and gradually adds new chords as accuracy improves.
 
-**Live app:** https://perfect-pitch.tim-69a.workers.dev
+**Live app:** https://pitchtrail.app
 
 The app works immediately in guest mode. An adult can also create one family account, add separate child profiles, and sync each child’s settings and practice history across devices.
 
@@ -18,7 +18,7 @@ The app works immediately in guest mode. An adult can also create one family acc
 
 ## Architecture
 
-Perfect Pitch deploys as one Cloudflare Worker:
+Pitch Trail deploys as one Cloudflare Worker:
 
 ```text
 Browser
@@ -82,6 +82,6 @@ An account supports up to 12 child profiles. Child profiles ask only for a nickn
 
 ## Method and attribution
 
-Perfect Pitch is adapted from [BSharp](https://github.com/paytonjjones/bsharp) by Payton Jones, which is based on [CIM Trainer](https://github.com/pganssle/cim) by Paul Ganssle. The original method is described in research on Eguchi’s chord-identification method.
+Pitch Trail is adapted from [BSharp](https://github.com/paytonjjones/bsharp) by Payton Jones, which is based on [CIM Trainer](https://github.com/pganssle/cim) by Paul Ganssle. The original method is described in research on Eguchi’s chord-identification method.
 
 The source and bundled media are distributed under the Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE). This is educational practice software, not a medical or developmental guarantee.

@@ -1,14 +1,20 @@
 <!doctype html>
 <html>
     <head>
-        <title>Perfect Pitch — chord training for little ears</title>
+        <title>Pitch Trail — color-chord adventures for little ears</title>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport"
               content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
         <meta http-equiv="Content-Language" content="en">
         <meta name="color-scheme" content="light dark">
-        <meta name="description" content="A free, family-friendly perfect pitch trainer. Adults can create child profiles and sync practice progress across devices.">
+        <meta name="theme-color" content="#163f36">
+        <meta name="description" content="Follow the color trail to stronger musical ears. A free, family-friendly chord trainer with separate child profiles and synced progress.">
+        <meta property="og:title" content="Pitch Trail">
+        <meta property="og:description" content="Color-chord adventures for little ears.">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://pitchtrail.app/">
+        <link rel="canonical" href="https://pitchtrail.app/">
         <link rel="icon" href="icon.svg" type="image/svg+xml">
         <link rel="preload" href="static/fonts/forkawesome-webfont.woff2?v=1.2.0"
                             as="font" type="font/woff2" crossorigin="">
@@ -18,15 +24,22 @@
     <body class="colorscheme-light">
     <div class="cim-container">
         <div class="menu-container" id="menu-container">
-            <a class="brand-mark" href="#" onclick="close_panel()" aria-label="Perfect Pitch home">
-                <span class="brand-note">♪</span>
-                <span>perfect<span class="brand-accent">pitch</span></span>
+            <a class="brand-mark" href="#" onclick="close_panel()" aria-label="Pitch Trail home">
+                <svg class="brand-trailmark" viewBox="0 0 48 48" aria-hidden="true">
+                    <circle cx="24" cy="24" r="23" class="trailmark-ground"/>
+                    <circle cx="34" cy="13" r="5" class="trailmark-sun"/>
+                    <path d="M13 39c2-8 12-8 10-16-1.2-5 3.2-7.8 9-10" class="trailmark-path"/>
+                    <path d="M10 30l7-8 5 5 6-8 10 11" class="trailmark-ridge"/>
+                </svg>
+                <span class="brand-words">pitch<span class="brand-accent">trail</span></span>
             </a>
             <div class="menu-spacer"></div>
             <div class="expansion-container">
                 <div class="infobox-container" id="home-button">
                     <a href="#"
                        class="infobox-trigger"
+                       aria-label="Practice trail"
+                       title="Practice trail"
                        onclick="close_panel()">
                     <i class="fa fa-solid fa-home"></i>
                   </a>
@@ -35,6 +48,8 @@
                     <a href="#"
                        id="trainer-infobox-trigger"
                        class="infobox-trigger"
+                       aria-label="Explore chord sounds"
+                       title="Explore chord sounds"
                        onclick="toggle_trainer_visibility()">
                     <i class="fa fa-solid fa-music"></i>
                   </a>
@@ -42,6 +57,8 @@
                 <div class="infobox-container">
                     <a href="#" class="infobox-trigger"
                        id="i-infobox-trigger"
+                       aria-label="How Pitch Trail works"
+                       title="How Pitch Trail works"
                        onclick="toggle_infobox_visibility()">
                     <i class="fa fa-solid fa-info-circle"></i>
                   </a>
@@ -50,6 +67,8 @@
                     <a href="#"
                        id="stats-history-trigger"
                        class="infobox-trigger"
+                       aria-label="Practice history"
+                       title="Practice history"
                        onclick="toggle_stats_history_visibility()">
                     <i class="fa fa-solid fa-line-chart"></i>
                   </a>
@@ -59,6 +78,8 @@
                     <a href="#"
                        id="profile-infobox-trigger"
                        class="infobox-trigger"
+                       aria-label="Explorer profiles"
+                       title="Explorer profiles"
                        onclick="toggle_profile_panel()">
                     <i class="fa fa-solid" id="profile-icon"></i>
                     <span id="profile-text"></span>
@@ -68,6 +89,7 @@
             <div class="hamburger">
                 <a href="#"
                    id="hamburger-link"
+                   aria-label="Open navigation"
                    onclick="toggle_expansion_bar()"
                    >
                     <i class="fa fa-bars"></i>
@@ -78,15 +100,27 @@
                 <button id="account-button" class="account-button" type="button">Save progress</button>
             </div>
         </div>
+        <section class="trail-heading" aria-labelledby="trail-heading-title">
+            <div class="trail-heading-copy">
+                <span class="trail-kicker"><span class="trail-kicker-dot"></span> Listening trail</span>
+                <h1 id="trail-heading-title">Find the color you hear.</h1>
+            </div>
+            <div class="trail-context" aria-live="polite">
+                <span>Current route</span>
+                <strong id="trail-level-name">Yellow trail</strong>
+                <small id="trail-level-detail">2 colors in this lesson</small>
+            </div>
+        </section>
         <div id="panel-area">
             <!-- Infobox -->
             <div class="infobox panel" id="i-infobox">
-                <h2>Short, playful practice for little ears.</h2>
+                <p class="panel-kicker">Trail guide</p>
+                <h2>Small steps build musical memory.</h2>
                 <p>This is an implementation of <a href="https://www.ganbar.us/documents/sakakibara_2012_chord_identification.pdf">Eguchi's Chord Identification method</a>. See also <a href="https://ichionkai.co.jp/english3.html">Ichionkai Music School</a>.</p>
                 <p><a href="https://youtu.be/kNfkm6PQC20">Here is a short video explaining how we use it</a>.</p>
                 <p>The method is intended for children aged 2–6. Aim for five short sessions per day, about 2–3 minutes or 20–25 identifications each. Chords are always identified with colors and introduced one at a time.</p>
                 <p>Wait at least two weeks between new chords, and only advance after the child can identify every presented chord with 100% accuracy.</p>
-                <p class="attribution-note">Perfect Pitch is adapted from the open-source BSharp trainer and CIM Trainer. It is educational practice software, not a medical or developmental guarantee.</p>
+                <p class="attribution-note">Pitch Trail is adapted from the open-source BSharp trainer and CIM Trainer. It is educational practice software, not a medical or developmental guarantee.</p>
             </div>
 
             <!-- Music player / Trainer -->
@@ -396,6 +430,7 @@
                 <span id="reaction-emoji"></span>
             </div>
             <div class="stats-wrapper">
+                <span class="checkpoint-label">Trail checkpoint</span>
                 <div class="stats-display chord-stats-display" id="chord-stats-display">
                     <div class="num-correct">
                         <span class="stats-correct" id="stats-correct">0</span><span class="stats-divider" id="stats-divider"> / </span><span class="stats-total" id="stats-total">0</span>
@@ -403,6 +438,9 @@
                     <div class="percent">
                         <span class="stats-percent" id="stats-percent"></span>
                     </div>
+                </div>
+                <div class="trail-meter" id="trail-meter" role="progressbar" aria-label="Session progress" aria-valuemin="0" aria-valuemax="25" aria-valuenow="0">
+                    <span id="trail-meter-fill"></span>
                 </div>
                 <div class="stats-display sn-stats-display" id="sn-stats-display">
                     <span id="note-emoji">&#9834;</span>
@@ -419,6 +457,8 @@
             </a>
         </div>
         <div class="selectors">
+            <label class="selector-field" for="chord-selector">
+            <span>Trail level</span>
             <select class="selector" name="chords" id="chord-selector" onchange="change_selector()">
             <optgroup label="White chords">
                 <option value="red" hidden>Level 0: Red (C E G)</option>
@@ -439,11 +479,15 @@
                 <option value="skyblue">Level 5: Sky Blue (E&#x266D; G B&#x266D;)</option>
             </optgroup>
             </select>
+            </label>
+            <label class="selector-field" for="instrument-selector">
+            <span>Trail sound</span>
             <select class="selector" name="instrument" id="instrument-selector" onchange="change_instrument_selector()">
                 <option value="piano_1">Piano</option>
                 <option value="guitar">Guitar</option>
                 <option value="guitar-strummed">Guitar (Strummed)</option>
             </select>
+            </label>
         </div>
 <div class="mode-toggle-container">
     <a id="download-link" class="download-button" onclick="download_state()">
@@ -511,7 +555,7 @@
             </ol>
             <p><strong>Pin the app:</strong></p>
             <ol>
-                <li>Open BSharp, then tap the Recent Apps button (or swipe up and hold)</li>
+                <li>Open Pitch Trail, then tap the Recent Apps button (or swipe up and hold)</li>
                 <li>Tap the app icon at the top of the preview, then tap <strong>Pin</strong></li>
             </ol>
             <p><strong>Unpin:</strong> Swipe up and hold from the bottom (gesture nav) or hold Back + Overview together (button nav).</p>
@@ -523,7 +567,7 @@
     <dialog id="account-dialog" class="account-dialog">
         <button id="account-close" class="dialog-close" type="button" aria-label="Close account dialog">×</button>
         <div id="account-signed-out">
-            <p class="dialog-kicker">For grown-ups</p>
+            <p class="dialog-kicker">Family basecamp</p>
             <h2>Keep every small win.</h2>
             <p class="dialog-intro">Create one family account, then add a separate profile for each child. Progress follows you to any device.</p>
             <div class="auth-tabs" role="tablist" aria-label="Account action">
@@ -545,8 +589,8 @@
             <p class="privacy-note">We store the adult’s email and each child’s nickname and practice progress. We never ask children for an email or exact age.</p>
         </div>
         <div id="account-signed-in" class="hidden">
-            <p class="dialog-kicker">Family account</p>
-            <h2>Your practice is synced.</h2>
+            <p class="dialog-kicker">Family basecamp</p>
+            <h2>Your trail is synced.</h2>
             <p id="account-email" class="account-email"></p>
             <p>Add or switch child profiles from the profile button in the top navigation.</p>
             <button id="account-logout" class="secondary-action" type="button">Sign out on this device</button>

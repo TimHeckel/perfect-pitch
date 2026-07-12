@@ -82,12 +82,23 @@ export function updateStatsDisplay(): void {
 
     const correct = stats.correct;
     const identifications = stats.identifications;
+    const target = getCurrentTargetNumber();
     const statsDisplayElem = document.getElementById('chord-stats-display');
     if (statsDisplayElem) {
         updateStatsContainer(statsDisplayElem, correct, identifications);
     }
 
-    if (identifications >= getCurrentTargetNumber()) {
+    const meter = document.getElementById('trail-meter');
+    const meterFill = document.getElementById('trail-meter-fill');
+    if (meter) {
+        meter.setAttribute('aria-valuemax', String(target));
+        meter.setAttribute('aria-valuenow', String(Math.min(identifications, target)));
+    }
+    if (meterFill) {
+        meterFill.style.width = `${Math.min(100, (identifications / target) * 100)}%`;
+    }
+
+    if (identifications >= target) {
         containerElem.classList.add('done');
     } else {
         containerElem.classList.remove('done');

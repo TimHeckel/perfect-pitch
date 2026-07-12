@@ -3,6 +3,13 @@
   "name": "perfect-pitch",
   "main": "worker/index.ts",
   "compatibility_date": "2026-07-12",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "pitchtrail.app",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",

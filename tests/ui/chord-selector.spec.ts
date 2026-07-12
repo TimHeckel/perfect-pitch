@@ -81,7 +81,16 @@ test("red option is hidden by default", async ({ page }) => {
 test("instrument selector appears next to level selector with available instruments", async ({
   page,
 }) => {
-  await expect(page.locator(".selectors > #chord-selector + #instrument-selector")).toBeVisible();
+  await expect(
+    page.locator(
+      ".selectors > .selector-field:first-child #chord-selector",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.locator(
+      ".selectors > .selector-field:last-child #instrument-selector",
+    ),
+  ).toBeVisible();
 
   const selector = page.locator("#instrument-selector");
   await expect(selector).toHaveValue("piano_1");

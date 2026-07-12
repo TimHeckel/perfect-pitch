@@ -36,7 +36,7 @@ test("guess overlay appearance", async ({ page }) => {
   const overlay = page.locator("#onboarding-overlay");
   await expect(overlay).toBeVisible({ timeout: 5000 });
   await expect(overlay.locator(".onboarding-text")).toHaveText(
-    "Guess the color",
+    "Choose the matching trail color",
   );
 
   await expect(page.locator("#flag-holder")).toHaveScreenshot(
@@ -55,7 +55,7 @@ test("success overlay appearance", async ({ page }) => {
 
   await expect(overlay).toHaveAttribute("data-step", "goNext");
   await expect(overlay.locator(".onboarding-text")).toHaveText(
-    "Great job! Click the arrow to continue",
+    "Great listening! Follow the arrow onward",
   );
   await expect(page.locator("#flag-holder")).toHaveScreenshot(
     "success-overlay.png",
@@ -73,7 +73,7 @@ test("retry overlay appearance", async ({ page }) => {
 
   await expect(overlay).toHaveAttribute("data-step", "goNext");
   await expect(overlay.locator(".onboarding-text")).toHaveText(
-    "Click the arrow to try again",
+    "Follow the arrow and listen once more",
   );
   await expect(page.locator("#flag-holder")).toHaveScreenshot(
     "retry-overlay.png",

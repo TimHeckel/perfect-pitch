@@ -1,4 +1,4 @@
-import { CHORDS_TONE, FIRST_BLACK_INDEX } from './data';
+import { CHORDS_TONE, CHORD_DEFINITIONS, FIRST_BLACK_INDEX } from './data';
 import { AudioFileInfo } from './types';
 import { randomElem, getCurrentTimestamp } from './utils';
 import {
@@ -274,6 +274,15 @@ export function changeSelector(to?: string): void {
         || (isBlackLevel() && currentProfile.show_chord_mode === 'black_only'));
 
     populateFlags(getSelectedColors, chordsOn);
+    const chordDefinition = CHORD_DEFINITIONS.find((chord) => chord.name === currentProfile.current_chord);
+    const trailName = document.getElementById('trail-level-name');
+    const trailDetail = document.getElementById('trail-level-detail');
+    if (trailName && chordDefinition) {
+        trailName.textContent = `${chordDefinition.display} trail`;
+    }
+    if (trailDetail) {
+        trailDetail.textContent = `${getSelectedColors().length} colors in this lesson`;
+    }
     populateAudio();
     showOnboardingPlayPrompt();
     saveState();
