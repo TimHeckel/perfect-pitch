@@ -22,6 +22,7 @@ let _EMOJI_LOCK = false;
 let _CURRENT_COEFFICIENTS: number[] | null = null;
 let _TRAINER_PRELOADED = false;
 let _PERSIST_REACTION_FACE_ENABLED = false;
+let _LESSON_PRELOAD_TIMER: number | null = null;
 export function getTestDeterministicColor(): string | null {
     return (window as unknown as Record<string, unknown>).__bsharp_test_deterministic_color as string | null ?? null;
 }
@@ -51,7 +52,32 @@ function setPlayedAfter(delay: number): void {
 
 function onAudioEnded(): void {
     _AUDIO_PLAYED = true;
+    setAudioStatus('Now choose the color');
     showOnboardingGuessPrompt();
+}
+
+function setAudioStatus(message: string, isError = false): void {
+    const status = document.getElementById('audio-status');
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle('error', isError);
+}
+
+function cancelLessonPreload(): void {
+    if (_LESSON_PRELOAD_TIMER !== null) {
+        window.clearTimeout(_LESSON_PRELOAD_TIMER);
+        _LESSON_PRELOAD_TIMER = null;
+    }
+}
+
+function warmLessonAudio(): void {
+    if (_LESSON_PRELOAD_TIMER !== null) return;
+    _LESSON_PRELOAD_TIMER = window.setTimeout(() => {
+        for (const color of getSelectedColors()) {
+            preloadAudio(getCurrentProfile().current_instrument, color, onAudioEnded);
+        }
+        _LESSON_PRELOAD_TIMER = null;
+    }, 1000);
 }
 
 export function stopCurrentAudio(): void {
@@ -104,6 +130,7 @@ export function populateAudio(): void {
     const playButton = document.getElementById('play-button');
     if (playButton) playButton.classList.remove('deactivated');
     _AUDIO_PLAYED = false;
+    setAudioStatus('Ready — tap play');
 }
 
 export function playAudio(): void {
@@ -116,7 +143,20 @@ export function playAudio(): void {
     stopCurrentAudio();
     const safeDuration = isNaN(duration) ? 0.8 : duration;
     setPlayedAfter(safeDuration * 0.8);
-    chord.play();
+    setAudioStatus('Loading sound…');
+    const playResult = chord.play();
+    if (playResult) {
+        void playResult.then(() => {
+            setAudioStatus('Playing chord');
+            warmLessonAudio();
+        }).catch((error: unknown) => {
+            console.warn('Audio playback was blocked', error);
+            setAudioStatus('Sound was blocked — check volume and tap play again', true);
+        });
+    } else {
+        setAudioStatus('Playing chord');
+        warmLessonAudio();
+    }
 }
 
 export function selectFlagWrapper(wrapperElem: HTMLElement): void {
@@ -238,9 +278,9 @@ export function changeSelector(to?: string): void {
     showOnboardingPlayPrompt();
     saveState();
 
-    for (const color of getSelectedColors()) {
-        preloadAudio(currentProfile.current_instrument, color, onAudioEnded);
-    }
+    // Prioritize the selected question at startup. The remaining samples warm
+    // after playback begins so piano files do not compete for bandwidth.
+    cancelLessonPreload();
 }
 
 export function changeInstrumentSelector(to?: string): void {
@@ -253,14 +293,11 @@ export function changeInstrumentSelector(to?: string): void {
 
     const currentProfile = getCurrentProfile();
     if (currentProfile.current_instrument !== instrumentSelector.value) {
+        cancelLessonPreload();
         stopCurrentAudio();
         currentProfile.current_instrument = instrumentSelector.value;
         populateAudio();
         saveState();
-
-        for (const color of getSelectedColors()) {
-            preloadAudio(currentProfile.current_instrument, color, onAudioEnded);
-        }
     }
 }
 

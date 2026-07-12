@@ -1,6 +1,6 @@
 .PHONY: build check clean test test-unit test-ui test-integration test-screenshot test-screenshot-update icons generate-audio move-downloaded-chords move-downloaded-notes convert-audio-to-mp3 agents-setup
 
-build: dist/bsharp.js dist/style.css dist/index.html dist/static dist/icon.svg
+build: dist/bsharp.js dist/style.css dist/index.html dist/static dist/icon.svg dist/_headers
 
 dist/bsharp.js: src/ts/*.ts
 	npx esbuild src/ts/main.ts --bundle --outfile=dist/bsharp.js --format=iife --target=es2020
@@ -13,6 +13,9 @@ dist/index.html: src/index.html
 
 dist/icon.svg: icon.svg
 	cp icon.svg dist/icon.svg
+
+dist/_headers: src/_headers
+	cp src/_headers dist/_headers
 
 dist/static: static
 	cp -r static dist/

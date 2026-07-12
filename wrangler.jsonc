@@ -13,7 +13,7 @@
     {
       "binding": "DB",
       "database_name": "perfect-pitch",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "58303ff9-f566-4f09-831d-abd06abc9283",
       "migrations_dir": "migrations"
     }
   ]

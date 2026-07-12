@@ -2,6 +2,8 @@
 
 A free, family-friendly web app for practicing chord identification with young children. Perfect Pitch uses the Eguchi color-chord method: a child hears a chord, chooses its color, and gradually adds new chords as accuracy improves.
 
+**Live app:** https://perfect-pitch.tim-69a.workers.dev
+
 The app works immediately in guest mode. An adult can also create one family account, add separate child profiles, and sync each child’s settings and practice history across devices.
 
 ## What is included
@@ -26,7 +28,7 @@ Browser
 
 Cloudflare is a good fit for the free public version because static asset requests are free and unlimited. The Workers Free plan currently includes 100,000 dynamic requests per day, and D1 includes 5 million rows read per day, 100,000 rows written per day, and 5 GB total storage. If the project ever outgrows that, the API is deliberately small and the schema is ordinary SQL.
 
-Adult passwords are PBKDF2-hashed with a unique salt. Login sessions use random, hashed, expiring tokens in `HttpOnly`, `Secure`, `SameSite=Strict` cookies. Mutating API requests require a same-origin browser request. The app rate-limits account attempts and never stores passwords or session tokens in plaintext.
+Adult passwords are PBKDF2-hashed with a unique salt at Cloudflare Workers' supported maximum of 100,000 iterations. Login sessions use random, hashed, expiring tokens in `HttpOnly`, `Secure`, `SameSite=Strict` cookies. Mutating API requests require a same-origin browser request. The app rate-limits account attempts and never stores passwords or session tokens in plaintext.
 
 ## Local development
 

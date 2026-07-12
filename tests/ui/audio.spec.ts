@@ -29,6 +29,11 @@ test("clicking play starts audio element", async ({ page }) => {
     () => (window as any).__audioSpy.lastPlayedElement?.paused ?? null,
   );
   expect(paused).toBe(false);
+  await expect(page.locator("#audio-status")).toHaveText("Playing chord");
+});
+
+test("startup mounts only the selected chord instead of preloading the lesson", async ({ page }) => {
+  await expect(page.locator("#audio-bank audio.chord")).toHaveCount(1);
 });
 
 test("rapid play clicks leave audio playing", async ({ page }) => {

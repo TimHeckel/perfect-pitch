@@ -185,6 +185,31 @@ div.control-wrapper {
   padding: clamp(8px, 1.4vh, 18px) 0 0;
 }
 
+div.control-container {
+  flex-direction: column;
+  gap: 7px;
+}
+
+#audio-status {
+  min-height: 18px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+#audio-status.error { color: #a7352c; }
+
+#audio-bank {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  pointer-events: none;
+}
+
 div.controls { gap: 14px; }
 
 div.controls a {
@@ -197,6 +222,7 @@ div.controls a {
   background: var(--accent);
   box-shadow: 0 14px 30px rgba(229, 91, 67, 0.24);
   transition: transform 180ms cubic-bezier(.2, .8, .2, 1), box-shadow 180ms ease;
+  text-decoration: none !important;
 }
 
 div.controls a#next-chord { background: var(--sage); }

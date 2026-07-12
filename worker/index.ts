@@ -33,7 +33,8 @@ interface SyncPayload {
 
 const SESSION_COOKIE = 'pp_session';
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
-const PASSWORD_ITERATIONS = 210_000;
+// Cloudflare Workers' WebCrypto PBKDF2 implementation caps iterations at 100,000.
+const PASSWORD_ITERATIONS = 100_000;
 const MAX_CHILDREN = 12;
 const MAX_SYNC_BYTES = 1_000_000;
 const encoder = new TextEncoder();

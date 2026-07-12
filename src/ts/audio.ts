@@ -48,13 +48,26 @@ export function audioFileElem(audioFile: AudioFileInfo, onEnded: () => void): HT
     if (audioFile.elem === null) {
         audioFile.elem = document.createElement('audio');
         audioFile.elem.classList.add('chord');
-        audioFile.elem.controls = true;
+        audioFile.elem.controls = false;
         audioFile.elem.preload = 'auto';
         audioFile.elem.src = 'static/chords/' + audioFile.filename;
         audioFile.elem.onended = onEnded;
+        audioFile.elem.setAttribute('aria-hidden', 'true');
+        getAudioBank().appendChild(audioFile.elem);
         audioFile.elem.load();
     }
     return audioFile.elem;
+}
+
+function getAudioBank(): HTMLElement {
+    let bank = document.getElementById('audio-bank');
+    if (!bank) {
+        bank = document.createElement('div');
+        bank.id = 'audio-bank';
+        bank.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(bank);
+    }
+    return bank;
 }
 
 let _currentTrainerAudio: HTMLAudioElement | null = null;
@@ -118,9 +131,13 @@ export function noteAudioFileElem(noteFile: NoteAudioFileInfo, onEnded: () => vo
     if (noteFile.elem === null) {
         noteFile.elem = document.createElement('audio');
         noteFile.elem.classList.add('note');
-        noteFile.elem.controls = true;
+        noteFile.elem.controls = false;
+        noteFile.elem.preload = 'auto';
         noteFile.elem.src = 'static/notes/' + noteFile.filename;
         noteFile.elem.onended = onEnded;
+        noteFile.elem.setAttribute('aria-hidden', 'true');
+        getAudioBank().appendChild(noteFile.elem);
+        noteFile.elem.load();
     }
     return noteFile.elem;
 }
