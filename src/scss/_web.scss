@@ -342,6 +342,22 @@ div.hamburger { display: none; }
 
 div.cim-container.panel-open > .trail-heading { display: none; }
 
+#panel-area > .panel {
+  min-height: 0;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+#stats-history-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: scroll !important;
+  align-content: flex-start;
+  scrollbar-gutter: stable;
+}
+
 div.control-wrapper {
   flex: 0 0 auto;
   padding: clamp(8px, 1.4vh, 18px) 0 0;
@@ -1208,6 +1224,17 @@ body.colorscheme-dark #profile-switcher .switcher-item.active {
 @keyframes reset-ready {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pine) 0%, transparent); }
   50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--pine) 18%, transparent); }
+}
+
+@keyframes home-cue {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+  50% { transform: scale(1.07); box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 20%, transparent); }
+}
+
+#home-button.first-visit-home-cue .infobox-trigger {
+  color: var(--accent) !important;
+  background: var(--paper-raised);
+  animation: home-cue 2.1s ease-in-out infinite;
 }
 
 @media (max-width: 780px) {

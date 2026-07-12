@@ -35,6 +35,20 @@ test("home button closes open panel", async ({ page }) => {
   await page.locator("#home-button a").click();
   await expect(page.locator("#i-infobox")).not.toHaveClass(/visible/);
   await expect(page.locator(".cim-container")).not.toHaveClass(/panel-open/);
+  await expect(page.locator("#menu-container")).not.toHaveClass(/visible/);
+});
+
+test("mobile Home closes navigation before returning to practice", async ({ page }) => {
+  await openMenu(page);
+  await page.locator("#home-button a").click();
+
+  await expect(page.locator("#menu-container")).not.toHaveClass(/visible/);
+  const layout = await page.evaluate(() => {
+    const menu = document.querySelector('#menu-container')!.getBoundingClientRect();
+    const play = document.querySelector('#play-button')!.getBoundingClientRect();
+    return { menuBottom: menu.bottom, playTop: play.top };
+  });
+  expect(layout.playTop).toBeGreaterThanOrEqual(layout.menuBottom);
 });
 
 test("opening second panel closes first", async ({ page }) => {

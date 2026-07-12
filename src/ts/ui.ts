@@ -257,7 +257,19 @@ function setPanelOpen(open: boolean): void {
     }
 }
 
+function collapseMobileNavigation(): void {
+    if (!window.matchMedia('(max-width: 780px)').matches) return;
+    document.getElementById('menu-container')?.classList.remove('visible');
+}
+
+function clearFirstVisitHomeCue(): void {
+    const homeButton = document.getElementById('home-button');
+    homeButton?.classList.remove('first-visit-home-cue');
+    homeButton?.querySelector('a')?.setAttribute('title', 'Practice trail');
+}
+
 function togglePanel(panelElem: HTMLElement): void {
+    if (panelElem.id !== 'i-infobox') clearFirstVisitHomeCue();
     if (_CURRENT_PANEL === panelElem) {
         // Close current panel
         panelElem.classList.remove('visible');
@@ -282,6 +294,8 @@ export function closePanel(): void {
         _CURRENT_PANEL = null;
         setPanelOpen(false);
     }
+    clearFirstVisitHomeCue();
+    collapseMobileNavigation();
     setActiveTrigger(null);
 }
 
@@ -303,7 +317,15 @@ const INFO_SEEN_KEY = 'pitchtrail_info_seen_v1';
 export function showFirstVisitInfo(): void {
     if (localStorage.getItem(INFO_SEEN_KEY)) return;
     localStorage.setItem(INFO_SEEN_KEY, 'true');
-    togglePanel(document.getElementById('i-infobox')!);
+    const infoPanel = document.getElementById('i-infobox')!;
+    const homeButton = document.getElementById('home-button');
+    homeButton?.classList.add('first-visit-home-cue');
+    homeButton?.querySelector('a')?.setAttribute('title', 'Start practicing');
+    const video = document.getElementById('pitch-trail-intro');
+    video?.addEventListener('ended', () => {
+        if (_CURRENT_PANEL === infoPanel) closePanel();
+    }, { once: true });
+    togglePanel(infoPanel);
 }
 
 export function toggleStatsHistoryVisibility(): void {

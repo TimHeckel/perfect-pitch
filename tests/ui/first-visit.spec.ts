@@ -8,10 +8,12 @@ test("the guide opens once on a student's first visit", async ({ page }) => {
 
   await expect(page.locator("#i-infobox")).toHaveClass(/visible/);
   await expect(page.locator(".cim-container")).toHaveClass(/panel-open/);
+  await expect(page.locator("#home-button")).toHaveClass(/first-visit-home-cue/);
 
-  await page.evaluate(() => {
-    (window as unknown as { close_panel: () => void }).close_panel();
-  });
+  await page.locator('#pitch-trail-intro').dispatchEvent('ended');
+  await expect(page.locator("#i-infobox")).not.toHaveClass(/visible/);
+  await expect(page.locator("#home-button")).not.toHaveClass(/first-visit-home-cue/);
+
   await page.evaluate(() => sessionStorage.setItem("preserve-first-visit", "true"));
   await page.reload();
 
