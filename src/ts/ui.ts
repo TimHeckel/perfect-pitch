@@ -13,7 +13,6 @@ import {
     calculatePercentage, calculateNeutralLevel, getCatEmoji, normalizeStatsObject
 } from './stats';
 import { formatDatetime, getCurrentTimestamp, validInt } from './utils';
-import { resetOnboarding } from './onboarding';
 
 let _DOWNLOAD_ENABLED_CLICKS = 0;
 let _DOWNLOAD_ENABLED_LAST_CLICK: number | null = null;
@@ -25,17 +24,20 @@ let _EASTER_EGG_ENABLED = false;
 let _getEmojiLock: () => boolean = () => false;
 let _resetStatsFn: (done?: boolean) => void = () => {};
 let _changeSelectorFn: (to?: string) => void = () => {};
+let _changeInstrumentSelectorFn: (to?: string) => void = () => {};
 let _onTrainerOpenFn: () => void = () => {};
 
 export function registerGameCallbacks(
     getEmojiLock: () => boolean,
     resetStats: (done?: boolean) => void,
     changeSelector: (to?: string) => void,
+    changeInstrumentSelector: (to?: string) => void,
     onTrainerOpen: () => void,
 ): void {
     _getEmojiLock = getEmojiLock;
     _resetStatsFn = resetStats;
     _changeSelectorFn = changeSelector;
+    _changeInstrumentSelectorFn = changeInstrumentSelector;
     _onTrainerOpenFn = onTrainerOpen;
 }
 
@@ -117,6 +119,7 @@ export function updateStatsDisplay(): void {
 
     const playButton = document.getElementById('play-button');
     playButton?.classList.toggle('deactivated', identifications >= target);
+    if (identifications >= target) playButton?.classList.remove('ready-action');
 
     const checkpointLabel = document.getElementById('checkpoint-label');
     if (checkpointLabel) {
@@ -455,7 +458,7 @@ function getProfileSettings(): {
     const singleNoteCorrectnessMode = singleNoteCorrectnessModeElem ? singleNoteCorrectnessModeElem.value : DEFAULT_SINGLE_NOTE_CORRECTNESS_MODE;
     const targetNumber = (document.getElementById('target_number_setting') as HTMLInputElement).value;
     const persistReactionFace = (document.getElementById('persist_reaction_face_setting') as HTMLInputElement).checked;
-    const enableOnboardingHints = (document.getElementById('enable_onboarding_hints_setting') as HTMLInputElement).checked;
+    const enableOnboardingHints = false;
     const colorScheme = (document.getElementById('color-scheme-selector') as HTMLSelectElement).value;
     const chordSelectionMode = (document.getElementById('chord-selection-mode-selector') as HTMLSelectElement).value;
 
@@ -541,7 +544,6 @@ function populateProfileSettings(): void {
     const singleNoteCorrectnessModeElem = document.getElementById('single-note-trainer-correctness-mode-selector') as HTMLSelectElement | null;
     if (singleNoteCorrectnessModeElem) singleNoteCorrectnessModeElem.value = profile.single_note_correctness_mode;
     (document.getElementById('persist_reaction_face_setting') as HTMLInputElement).checked = profile.persist_reaction_face;
-    (document.getElementById('enable_onboarding_hints_setting') as HTMLInputElement).checked = profile.enable_onboarding_hints;
     (document.getElementById('color-scheme-selector') as HTMLSelectElement).value = profile.color_scheme;
     (document.getElementById('chord-selection-mode-selector') as HTMLSelectElement).value = profile.chord_selection_mode;
 
@@ -595,7 +597,6 @@ export function openProfileAdder(): void {
     const chordDisplayMode = document.getElementById('chord-name-display-mode-selector') as HTMLSelectElement | null;
     if (chordDisplayMode) chordDisplayMode.value = DEFAULT_CHORD_DISPLAY_MODE;
     (document.getElementById('persist_reaction_face_setting') as HTMLInputElement).checked = DEFAULT_PERSIST_REACTION_FACE;
-    (document.getElementById('enable_onboarding_hints_setting') as HTMLInputElement).checked = DEFAULT_ENABLE_ONBOARDING_HINTS;
     (document.getElementById('color-scheme-selector') as HTMLSelectElement).value = DEFAULT_COLOR_SCHEME;
     (document.getElementById('chord-selection-mode-selector') as HTMLSelectElement).value = DEFAULT_CHORD_SELECTION_MODE;
 
@@ -714,16 +715,11 @@ export function setCurrentProfile(profile: Profile): void {
         profile.current_instrument = DEFAULT_INSTRUMENT;
     }
 
-    const instrumentSelector = document.getElementById('instrument-selector') as HTMLSelectElement | null;
-    if (instrumentSelector) {
-        instrumentSelector.value = profile.current_instrument;
-    }
-
     normalizeStatsObject(profile.stats);
-    resetOnboarding();
     populateProfileUiElements();
     setChordDisplayMode(profile.chord_display_mode);
     applyColorScheme(profile.color_scheme);
+    _changeInstrumentSelectorFn(profile.current_instrument);
     _changeSelectorFn(profile.current_chord);
     saveState();
 }
@@ -832,14 +828,6 @@ export function triggerEasterEgg(): void {
     }
 
     _EASTER_EGG_ENABLED = true;
-    const chordElem = document.getElementById('chord-selector') as HTMLSelectElement;
-    if (chordElem) {
-        for (const optElem of chordElem.options) {
-            if (optElem.value === 'red') {
-                optElem.removeAttribute('hidden');
-            }
-        }
-    }
 }
 
 export function showScreenPinningInfo(): void {

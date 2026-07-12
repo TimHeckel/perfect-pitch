@@ -9,7 +9,7 @@ import {
 import { getCurrentCoefficients, updateStartTimeIfNeeded, updateStats, normalizeStatsObject } from './stats';
 import { getAudioFiles, audioFileElem, playChordFiles, preloadAudio } from './audio';
 import { populateFlags, updateStatsDisplay, resetCatEmoji, setCatEmoji, setChordDisplayMode, populateProfileUiElements } from './ui';
-import { dismissOnboardingStep, showOnboardingGuessPrompt, showOnboardingGoNextPrompt, showOnboardingPlayPrompt } from './onboarding';
+import { canAdvanceProfile, getLevelDay, getNextChord, LEVEL_WAIT_DAYS } from './progression';
 
 let _COLORS: string[] | null = null;
 let _CHORDS_ON = false;
@@ -53,7 +53,6 @@ function setPlayedAfter(delay: number): void {
 function onAudioEnded(): void {
     _AUDIO_PLAYED = true;
     setAudioStatus('Now choose the color');
-    showOnboardingGuessPrompt();
 }
 
 function setAudioStatus(message: string, isError = false): void {
@@ -129,9 +128,12 @@ export function populateAudio(): void {
     }
 
     const playButton = document.getElementById('play-button');
-    if (playButton) playButton.classList.remove('deactivated');
+    if (playButton) {
+        playButton.classList.remove('deactivated');
+        playButton.classList.add('ready-action');
+    }
     _AUDIO_PLAYED = false;
-    setAudioStatus('Ready — tap play');
+    setAudioStatus('Ready to play');
 }
 
 export function playAudio(): void {
@@ -139,7 +141,7 @@ export function playAudio(): void {
     if (playButton && playButton.classList.contains('deactivated')) return;
     if (!_CURRENT_AUDIO) return;
 
-    dismissOnboardingStep('play');
+    playButton?.classList.remove('ready-action');
     const [chord, duration] = _CURRENT_AUDIO;
     stopCurrentAudio();
     const safeDuration = isNaN(duration) ? 0.8 : duration;
@@ -190,13 +192,10 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     }
     _SELECTED_ELEM = elem;
     if (reachedTarget) {
-        dismissOnboardingStep('guess');
         getCurrentProfile().stats.done = true;
         saveSessionHistory();
         saveState();
-        setAudioStatus('Trail complete — tap reset to start a new one');
-    } else {
-        showOnboardingGoNextPrompt(isCorrect);
+        setAudioStatus('Trail complete');
     }
 
     if (getCurrentProfile().persist_reaction_face &&
@@ -217,6 +216,7 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     const nextButton = document.getElementById('next-chord');
     if (nextButton) {
         nextButton.classList.toggle('deactivated', reachedTarget);
+        nextButton.classList.toggle('ready-action', !reachedTarget);
     }
 }
 
@@ -224,7 +224,7 @@ export function nextAudio(): void {
     const nextButton = document.getElementById('next-chord');
     if (!nextButton || nextButton.classList.contains('deactivated')) return;
 
-    dismissOnboardingStep('goNext');
+    nextButton.classList.remove('ready-action');
 
     if (_CHORDS_ON && getCurrentProfile().reveal_chord_mode === 'after_guess') {
         document.getElementById('flag-holder')!.classList.remove('chord-notes');
@@ -236,21 +236,35 @@ export function nextAudio(): void {
 }
 
 export function resetStats(done = true): void {
-    getCurrentProfile().stats.done = done;
-    if (!done || getCurrentProfile().stats.identifications > 0) {
+    const profile = getCurrentProfile();
+    profile.stats.done = done;
+    if (!done || profile.stats.identifications > 0) {
         saveSessionHistory();
+    }
+    const now = getCurrentTimestamp();
+    if (done && canAdvanceProfile(profile, now)) {
+        const nextChord = getNextChord(profile.current_chord);
+        if (nextChord) {
+            profile.current_chord = nextChord;
+            profile.level_started_at = now;
+            STATE.current_chord = nextChord;
+            _COLORS = null;
+            _CHORDS_ON = (profile.show_chord_mode === 'always'
+                || (isBlackLevel() && profile.show_chord_mode === 'black_only'));
+        }
     }
     if (_PERSIST_REACTION_FACE_ENABLED && done) {
         resetCatEmoji();
         _PERSIST_REACTION_FACE_ENABLED = false;
         _EMOJI_LOCK = false;
     }
-    getCurrentProfile().stats = newStats();
+    profile.stats = newStats();
     _CURRENT_COEFFICIENTS = null;
     saveState();
     updateStatsDisplay();
+    renderLevel();
+    populateFlags(getSelectedColors, chordsOn);
     populateAudio();
-    showOnboardingPlayPrompt();
 }
 
 function retrieveSavedStats(): void {
@@ -268,17 +282,14 @@ function retrieveSavedStats(): void {
 }
 
 export function changeSelector(to?: string): void {
-    const chordSelector = document.getElementById('chord-selector') as HTMLSelectElement;
-
-    if (to !== undefined) {
-        chordSelector.value = to;
-    }
-
     const currentProfile = getCurrentProfile();
-    if (STATE.current_chord !== chordSelector.value) {
+    const requestedChord = to ?? currentProfile.current_chord;
+    if (!(requestedChord in CHORDS_TONE)) return;
+
+    if (STATE.current_chord !== requestedChord) {
         resetStats(false);
-        STATE.current_chord = chordSelector.value;
-        currentProfile.current_chord = chordSelector.value;
+        STATE.current_chord = requestedChord;
+        currentProfile.current_chord = requestedChord;
         currentProfile.stats.current_chord = currentProfile.current_chord;
         retrieveSavedStats();
     }
@@ -288,17 +299,8 @@ export function changeSelector(to?: string): void {
         || (isBlackLevel() && currentProfile.show_chord_mode === 'black_only'));
 
     populateFlags(getSelectedColors, chordsOn);
-    const trailName = document.getElementById('trail-level-name');
-    const trailDetail = document.getElementById('trail-level-detail');
-    const colorCount = getSelectedColors().length;
-    if (trailName) {
-        trailName.textContent = `${colorCount}-color trail`;
-    }
-    if (trailDetail) {
-        trailDetail.textContent = `Lesson ${Math.max(1, chordSelector.selectedIndex)} · answers stay hidden`;
-    }
+    renderLevel();
     populateAudio();
-    showOnboardingPlayPrompt();
     saveState();
 
     // Prioritize the selected question at startup. The remaining samples warm
@@ -306,19 +308,37 @@ export function changeSelector(to?: string): void {
     cancelLessonPreload();
 }
 
-export function changeInstrumentSelector(to?: string): void {
-    const instrumentSelector = document.getElementById('instrument-selector') as HTMLSelectElement;
-    if (!instrumentSelector) return;
+function renderLevel(): void {
+    const trailName = document.getElementById('trail-level-name');
+    const trailDetail = document.getElementById('trail-level-detail');
+    const colorCount = getSelectedColors().length;
+    if (trailName) {
+        trailName.textContent = `${colorCount}-color trail`;
+    }
+    if (trailDetail) {
+        const profile = getCurrentProfile();
+        const isFinalLevel = getNextChord(profile.current_chord) === null;
+        trailDetail.textContent = isFinalLevel
+            ? 'Final route'
+            : `Day ${getLevelDay(profile.level_started_at, getCurrentTimestamp())} of ${LEVEL_WAIT_DAYS}`;
+    }
+}
 
-    if (to !== undefined) {
-        instrumentSelector.value = to;
+export function changeInstrumentSelector(to?: string): void {
+    const currentProfile = getCurrentProfile();
+    const requestedInstrument = to ?? currentProfile.current_instrument;
+    const instrument = requestedInstrument === 'guitar' ? 'guitar' : 'piano_1';
+
+    for (const button of document.querySelectorAll<HTMLButtonElement>('.sound-choice')) {
+        const isActive = button.dataset.instrument === instrument;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-pressed', String(isActive));
     }
 
-    const currentProfile = getCurrentProfile();
-    if (currentProfile.current_instrument !== instrumentSelector.value) {
+    if (currentProfile.current_instrument !== instrument) {
         cancelLessonPreload();
         stopCurrentAudio();
-        currentProfile.current_instrument = instrumentSelector.value;
+        currentProfile.current_instrument = instrument;
         populateAudio();
         saveState();
     }

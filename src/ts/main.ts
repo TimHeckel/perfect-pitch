@@ -4,7 +4,6 @@ import {
     changeInstrumentSelector, onTrainerOpen, playChord, getEmojiLock, stopCurrentAudio,
     _CORRECT_COLOR
 } from './game';
-import { initOnboarding } from './onboarding';
 import {
     toggleExpansionBar, toggleInfoboxVisibility, toggleStatsHistoryVisibility,
     toggleProfilePanel, applyColorScheme,
@@ -20,7 +19,7 @@ import { cleanSessionHistory } from './session_cleanup';
 import { initCloudSync } from './cloud';
 
 // Register callbacks to break circular dependency between ui.ts and game.ts
-registerGameCallbacks(getEmojiLock, resetStats, changeSelector, onTrainerOpen);
+registerGameCallbacks(getEmojiLock, resetStats, changeSelector, changeInstrumentSelector, onTrainerOpen);
 
 // Expose functions still used by inline handlers.
 const w = window as unknown as Record<string, unknown>;
@@ -194,7 +193,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     changeSelector(profile.current_chord);
     installFlagBounce();
     installFlagPointerHandling();
-    initOnboarding();
     updateStatsDisplay();
     cleanSessionHistory();
     initActiveState();

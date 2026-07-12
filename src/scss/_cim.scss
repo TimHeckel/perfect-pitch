@@ -192,45 +192,6 @@ div.flag-container {
     cursor: pointer;
 }
 
-#onboarding-overlay {
-    display: none;
-    position: absolute;
-    inset: 0;
-    z-index: 50;
-    font-size: 1.6rem;
-    font-weight: bold;
-    text-align: center;
-    padding: 0 2rem;
-    pointer-events: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    border-radius: 8px;
-
-    &.visible {
-        display: flex;
-    }
-
-    .onboarding-arrow {
-        font-size: 4rem;
-        line-height: 1;
-    }
-}
-
-body.colorscheme-dark #onboarding-overlay {
-    background: rgba(0, 0, 0, 0.45);
-    color: white;
-}
-
-body.colorscheme-light #onboarding-overlay {
-    background: rgba(255, 255, 255, 0.6);
-    color: black;
-}
-
-div.cim-container.panel-open #onboarding-overlay {
-    display: none;
-}
-
 div.chord-notes-container {
     color: #000;
     font-weight: bold;
@@ -418,14 +379,6 @@ div.selectors select.selector {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-div.selectors #chord-selector {
-    width: 24ch;
-}
-
-div.selectors #instrument-selector {
-    width: 12ch;
 }
 
 body.colorscheme-light div.stats.done.perfect span#stats-divider,

@@ -84,8 +84,10 @@ test("switching profiles applies that profile chord level", async ({
     .check();
   await page.locator("#add-user-button").click();
 
-  // Change chord level to blue for the new profile
-  await page.locator("#chord-selector").selectOption("blue");
+  // Simulate an automatically earned blue level for the new profile.
+  await page.evaluate(() => {
+    (window as unknown as { change_selector: (to: string) => void }).change_selector("blue");
+  });
 
   // Switch back to Guest (Guest uses fa-user icon)
   await openProfilePanel(page);
@@ -94,14 +96,14 @@ test("switching profiles applies that profile chord level", async ({
     .click();
 
   // Guest should have default level (yellow)
-  await expect(page.locator("#chord-selector")).toHaveValue("yellow");
+  await expect(page.locator("#trail-level-name")).toHaveText("2-color trail");
 
   // Switch back to Blue Level User (uses fa-paw icon)
   await page
     .locator("#profile-switcher .switcher-profile:has(.fa-paw)")
     .click();
 
-  await expect(page.locator("#chord-selector")).toHaveValue("blue");
+  await expect(page.locator("#trail-level-name")).toHaveText("3-color trail");
 });
 
 test("switching profiles applies that profile instrument", async ({ page }) => {
@@ -115,20 +117,20 @@ test("switching profiles applies that profile instrument", async ({ page }) => {
     .check();
   await page.locator("#add-user-button").click();
 
-  await page.locator("#instrument-selector").selectOption("guitar");
+  await page.locator("#sound-guitar").click();
 
   await openProfilePanel(page);
   await page
     .locator("#profile-switcher .switcher-profile:has(.fa-user)")
     .click();
 
-  await expect(page.locator("#instrument-selector")).toHaveValue("piano_1");
+  await expect(page.locator("#sound-piano")).toHaveAttribute("aria-pressed", "true");
 
   await page
     .locator("#profile-switcher .switcher-profile:has(.fa-trophy)")
     .click();
 
-  await expect(page.locator("#instrument-selector")).toHaveValue("guitar");
+  await expect(page.locator("#sound-guitar")).toHaveAttribute("aria-pressed", "true");
 });
 
 test("short session length persists after save", async ({ page }) => {

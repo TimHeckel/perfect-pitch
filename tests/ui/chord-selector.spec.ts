@@ -1,175 +1,120 @@
 import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem("preserve-state")) localStorage.clear();
+  });
   await page.goto("/");
 });
 
-test("14 chord flags exist in DOM", async ({ page }) => {
-  const flags = page.locator(".flag-wrapper:not(.trainer)");
-  await expect(flags).toHaveCount(14);
-});
+async function setLevel(page: import("@playwright/test").Page, color: string) {
+  await page.evaluate((level) => {
+    (window as unknown as { change_selector: (to: string) => void }).change_selector(level);
+  }, color);
+}
 
-test("default level shows red and yellow flags", async ({ page }) => {
-  // Default chord level is yellow (index 1), so red and yellow should be visible
-  const redFlag = page.locator("#red-flag");
-  const yellowFlag = page.locator("#yellow-flag");
-  const blueFlag = page.locator("#blue-flag");
-
-  await expect(redFlag).toBeVisible();
-  await expect(yellowFlag).toBeVisible();
-  await expect(blueFlag).not.toBeVisible();
-});
-
-test("lesson route reports difficulty without revealing the answer color", async ({
-  page,
-}) => {
+test("14 chord flags exist while the automatic route starts with two", async ({ page }) => {
+  await expect(page.locator(".flag-wrapper:not(.trainer)")).toHaveCount(14);
+  await expect(page.locator("#red-flag")).toBeVisible();
+  await expect(page.locator("#yellow-flag")).toBeVisible();
+  await expect(page.locator("#blue-flag")).not.toBeVisible();
   await expect(page.locator("#trail-level-name")).toHaveText("2-color trail");
   await expect(page.locator("#trail-level-name")).not.toContainText("Yellow");
-
-  await page.locator("#chord-selector").selectOption("blue");
-  await expect(page.locator("#trail-level-name")).toHaveText("3-color trail");
-  await expect(page.locator("#trail-level-name")).not.toContainText("Blue");
 });
 
-test("selecting blue shows red, yellow, blue", async ({ page }) => {
-  const selector = page.locator("#chord-selector");
-  await selector.selectOption("blue");
+test("manual level controls are absent", async ({ page }) => {
+  await expect(page.locator("#chord-selector")).toHaveCount(0);
+  await expect(page.getByText("Trail level", { exact: true })).toHaveCount(0);
+});
 
+test("the internal route follows the fixed cumulative chord order", async ({ page }) => {
+  await setLevel(page, "blue");
   await expect(page.locator("#red-flag")).toBeVisible();
   await expect(page.locator("#yellow-flag")).toBeVisible();
   await expect(page.locator("#blue-flag")).toBeVisible();
   await expect(page.locator("#black-flag")).not.toBeVisible();
-});
+  await expect(page.locator("#trail-level-name")).toHaveText("3-color trail");
 
-test("black chord level shows all white plus selected black chord", async ({
-  page,
-}) => {
-  const selector = page.locator("#chord-selector");
-  await selector.selectOption("gray");
-
-  // All 9 white chords should be visible
-  for (const color of [
-    "red",
-    "yellow",
-    "blue",
-    "black",
-    "green",
-    "orange",
-    "purple",
-    "pink",
-    "brown",
-  ]) {
-    await expect(page.locator(`#${color}-flag`)).toBeVisible();
-  }
-
-  // Gray should be visible, but tan and beyond should not
+  await setLevel(page, "gray");
   await expect(page.locator("#gray-flag")).toBeVisible();
   await expect(page.locator("#tan-flag")).not.toBeVisible();
-});
-
-test("flag container gets flags-compact class with more than 9 flags", async ({
-  page,
-}) => {
-  const selector = page.locator("#chord-selector");
-  await selector.selectOption("gray");
-
   await expect(page.locator("#flag-holder")).toHaveClass(/flags-compact/);
 });
 
-test("flag container gets flags-expanded class with fewer than 4 flags", async ({
-  page,
-}) => {
-  // Default level is yellow = 2 flags (red + yellow), which is < 4
-  await expect(page.locator("#flag-holder")).toHaveClass(/flags-expanded/);
+test("route starts on day one of the fourteen-day gate", async ({ page }) => {
+  await expect(page.locator("#trail-level-detail")).toHaveText("Day 1 of 14");
 });
 
-test("red option is hidden by default", async ({ page }) => {
-  const redOption = page.locator("#chord-selector option[value='red']");
-  await expect(redOption).toHaveAttribute("hidden", "");
-});
+test("header offers exactly two persistent sound buttons", async ({ page, context }) => {
+  await expect(page.locator(".sound-choice")).toHaveCount(2);
+  await expect(page.locator("#sound-piano")).toHaveAttribute("aria-pressed", "true");
+  await page.locator("#sound-guitar").click();
+  await expect(page.locator("#sound-guitar")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#sound-piano")).toHaveAttribute("aria-pressed", "false");
 
-test("instrument selector stays in the global header with available instruments", async ({
-  page,
-}) => {
-  await expect(
-    page.locator(
-      ".selectors > .selector-field:first-child #chord-selector",
-    ),
-  ).toBeVisible();
-  await expect(
-    page.locator(".header-sound-control #instrument-selector"),
-  ).toBeVisible();
-
-  const selector = page.locator("#instrument-selector");
-  await expect(selector).toHaveValue("piano_1");
-  await expect(selector.locator("option")).toHaveText([
-    "Piano",
-    "Guitar",
-    "Strummed",
-  ]);
-});
-
-test("selecting an instrument persists it on the current profile", async ({
-  page,
-  context,
-}) => {
-  const selector = page.locator("#instrument-selector");
-  await selector.selectOption("guitar-strummed");
-
-  await expect(selector).toHaveValue("guitar-strummed");
-  await expect
-    .poll(async () =>
-      page.evaluate(() => {
-        const state = JSON.parse(localStorage.getItem("bsharp_state")!);
-        return state.profiles[state.current_profile].current_instrument;
-      }),
-    )
-    .toBe("guitar-strummed");
+  await expect.poll(() => page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("bsharp_state")!);
+    return state.profiles[state.current_profile].current_instrument;
+  })).toBe("guitar");
 
   const secondPage = await context.newPage();
   await secondPage.goto("/");
-  await expect(secondPage.locator("#instrument-selector")).toHaveValue("guitar-strummed");
+  await expect(secondPage.locator("#sound-guitar")).toHaveAttribute("aria-pressed", "true");
   await secondPage.close();
 });
 
-test("selected instrument controls chord audio source", async ({ page }) => {
+test("guitar button selects the immediate guitar sample", async ({ page }) => {
   await page.addInitScript(() => {
-    Object.defineProperty(window, "__bsharp_loaded_audio_srcs", {
-      value: [],
-      writable: true,
-    });
+    Object.defineProperty(window, "__bsharp_loaded_audio_srcs", { value: [], writable: true });
     const originalLoad = HTMLMediaElement.prototype.load;
     HTMLMediaElement.prototype.load = function () {
       (window as unknown as { __bsharp_loaded_audio_srcs: string[] }).__bsharp_loaded_audio_srcs.push(this.src);
       return originalLoad.call(this);
     };
-    (window as unknown as { __bsharp_test_deterministic_color: string }).__bsharp_test_deterministic_color =
-      "yellow";
+    (window as unknown as { __bsharp_test_deterministic_color: string }).__bsharp_test_deterministic_color = "yellow";
   });
   await page.goto("/");
+  await page.locator("#sound-guitar").click();
 
-  await page.locator("#instrument-selector").selectOption("guitar");
+  await expect.poll(() => page.evaluate(() =>
+    (window as unknown as { __bsharp_loaded_audio_srcs: string[] }).__bsharp_loaded_audio_srcs,
+  )).toContainEqual(expect.stringContaining("/static/chords/guitar/c4f4a4_yellow.mp3"));
+});
 
-  await expect
-    .poll(async () =>
-      page.evaluate(
-        () =>
-          (window as unknown as { __bsharp_loaded_audio_srcs: string[] }).__bsharp_loaded_audio_srcs,
-      ),
-    )
-    .toContainEqual(expect.stringContaining("/static/chords/guitar/c4f4a4_yellow.mp3"));
+test("a perfect trail advances only after the fourteen-day gate", async ({ page }) => {
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("bsharp_state")!);
+    const profile = state.profiles[state.current_profile];
+    profile.level_started_at = Math.floor(Date.now() / 1000) - (14 * 24 * 60 * 60);
+    profile.stats.correct = 10;
+    profile.stats.identifications = 10;
+    profile.stats.done = true;
+    localStorage.setItem("bsharp_state", JSON.stringify(state));
+    sessionStorage.setItem("preserve-state", "true");
+  });
+  await page.reload();
+  await page.locator("#reset-button").click();
 
-  await page.locator("#instrument-selector").selectOption("guitar-strummed");
+  await expect(page.locator("#trail-level-name")).toHaveText("3-color trail");
+  await expect(page.locator("#blue-flag")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("bsharp_state")!);
+    return state.profiles[state.current_profile].current_chord;
+  })).toBe("blue");
+});
 
-  await expect
-    .poll(async () =>
-      page.evaluate(
-        () =>
-          (window as unknown as { __bsharp_loaded_audio_srcs: string[] }).__bsharp_loaded_audio_srcs,
-      ),
-    )
-    .toContainEqual(
-      expect.stringContaining("/static/chords/guitar-strummed/c4f4a4_yellow.mp3"),
-    );
+test("an imperfect trail stays on the same route after fourteen days", async ({ page }) => {
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("bsharp_state")!);
+    const profile = state.profiles[state.current_profile];
+    profile.level_started_at = Math.floor(Date.now() / 1000) - (14 * 24 * 60 * 60);
+    profile.stats.correct = 9;
+    profile.stats.identifications = 10;
+    profile.stats.done = true;
+    localStorage.setItem("bsharp_state", JSON.stringify(state));
+    sessionStorage.setItem("preserve-state", "true");
+  });
+  await page.reload();
+  await page.locator("#reset-button").click();
+  await expect(page.locator("#trail-level-name")).toHaveText("2-color trail");
 });

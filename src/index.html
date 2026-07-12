@@ -96,28 +96,21 @@
                 </a>
             </div>
             <div class="account-cluster">
-                <label class="header-sound-control" for="instrument-selector">
+                <div class="header-sound-control" role="group" aria-label="Trail sound">
                     <i class="fa fa-music" aria-hidden="true"></i>
                     <span>Sound</span>
-                    <select name="instrument" id="instrument-selector" onchange="change_instrument_selector()">
-                        <option value="piano_1">Piano</option>
-                        <option value="guitar">Guitar</option>
-                        <option value="guitar-strummed">Strummed</option>
-                    </select>
-                </label>
+                    <button type="button" class="sound-choice" id="sound-piano" data-instrument="piano_1" aria-pressed="true" onclick="change_instrument_selector('piano_1')">Piano</button>
+                    <button type="button" class="sound-choice" id="sound-guitar" data-instrument="guitar" aria-pressed="false" onclick="change_instrument_selector('guitar')">Guitar</button>
+                </div>
                 <span id="sync-status">Guest mode</span>
                 <button id="account-button" class="account-button" type="button" aria-label="Save progress"><span class="account-long">Save progress</span><span class="account-short">Save</span></button>
             </div>
         </div>
-        <section class="trail-heading" aria-labelledby="trail-heading-title">
-            <div class="trail-heading-copy">
-                <span class="trail-kicker"><span class="trail-kicker-dot"></span> Listening trail</span>
-                <h1 id="trail-heading-title">Find the color you hear.</h1>
-            </div>
+        <section class="trail-heading" aria-label="Current lesson">
             <div class="trail-context" aria-live="polite">
                 <span>Lesson route</span>
                 <strong id="trail-level-name">2-color trail</strong>
-                <small id="trail-level-detail">Lesson 1 · answers stay hidden</small>
+                <small id="trail-level-detail">Day 1 of 14</small>
             </div>
         </section>
         <div id="panel-area">
@@ -139,11 +132,11 @@
                     <figcaption><span>How to follow the listening trail</span><span>18 seconds</span></figcaption>
                 </figure>
                 <div class="guide-copy">
-                    <p>Pitch Trail follows <a href="https://www.ganbar.us/documents/sakakibara_2012_chord_identification.pdf">Eguchi's Chord Identification method</a>: listen, choose the matching color, and add new chords gradually. See also <a href="https://ichionkai.co.jp/english3.html">Ichionkai Music School</a>.</p>
+                    <p>Pitch Trail follows <a href="https://www.ganbar.us/documents/sakakibara_2012_chord_identification.pdf">Eguchi's Chord Identification method</a>: listen, choose the matching color, and add new chords gradually. See also the <a href="https://ichionkai.co.jp/english4.html">Ichionkai Perfect Pitch Program</a>.</p>
                     <ol class="guide-steps" aria-label="Practice rhythm">
-                        <li><strong>Keep it tiny.</strong><span>Practice for 2–3 minutes at a time.</span></li>
-                        <li><strong>Repeat often.</strong><span>Aim for a few short sessions through the day.</span></li>
-                        <li><strong>Move slowly.</strong><span>Add a chord only after every current color is secure.</span></li>
+                        <li><strong>Keep it tiny.</strong><span>Pitch Trail uses a short 10-answer checkpoint.</span></li>
+                        <li><strong>Repeat often.</strong><span>The published method uses several short sessions each day.</span></li>
+                        <li><strong>Earn the next marker.</strong><span>A perfect trail after at least 14 days adds one chord automatically.</span></li>
                     </ol>
                     <p class="attribution-note">Designed for children aged 2–6. Pitch Trail is adapted from the open-source BSharp trainer and CIM Trainer. It is educational practice software, not a medical or developmental guarantee.</p>
                 </div>
@@ -228,10 +221,6 @@
                     <input type="checkbox" id="persist_reaction_face_setting" class="entry">
                 </div>
                 <div class="entry-row">
-                    <label for="enable_onboarding_hints_setting">Enable Onboarding Hints:</label>
-                    <input type="checkbox" id="enable_onboarding_hints_setting" class="entry">
-                </div>
-                <div class="entry-row">
                     <label for="target_number_setting">Session length:</label>
                     <input type="number" id="target_number_setting" class="entry" min="5" max="25" step="1">
                 </div>
@@ -275,7 +264,7 @@
                         <i class="fa fa-arrow-right" aria-hidden="true"></i>
                     </a>
                 </div>
-                <p id="audio-status" role="status" aria-live="polite">Ready — tap play</p>
+                <p id="audio-status" class="visually-hidden" role="status" aria-live="polite">Ready to play</p>
             </div>
         </div>
         <div class="flag-container" id="flag-holder">
@@ -449,7 +438,6 @@
                 </div>
             </div>
             <div class="flag-spacer"></div>
-            <div id="onboarding-overlay"></div>
         </div>
         <div class="stats controls" id="stats-container">
             <div class="emoji-container">
@@ -481,31 +469,6 @@
             <a id="reset-button" onclick="reset_stats()" aria-label="Start a new trail" title="Start a new trail">
                 <i class="fa fa-refresh" aria-hidden="true"></i>
             </a>
-        </div>
-        <div class="selectors">
-            <label class="selector-field" for="chord-selector">
-            <span>Trail level</span>
-            <select class="selector" name="chords" id="chord-selector" onchange="change_selector()">
-            <optgroup label="White chords">
-                <option value="red" hidden>Level 0: Red (C E G)</option>
-                <option value="yellow">Level 1: Yellow (C F A)</option>
-                <option value="blue">Level 2: Blue (B D G)</option>
-                <option value="black">Level 3: Black (A C F)</option>
-                <option value="green">Level 4: Green (D G B)</option>
-                <option value="orange">Level 5: Orange (E G C)</option>
-                <option value="purple">Level 6: Purple (F A C)</option>
-                <option value="pink">Level 7: Pink (G B D)</option>
-                <option value="brown">Level 8: Brown (G C E)</option>
-            </optgroup>
-            <optgroup label="Black chords">
-                <option value="gray">Level 1: Gray (A C&#x266F; E)</option>
-                <option value="tan">Level 2: Tan (D F&#x266F; A)</option>
-                <option value="lightgreen">Level 3: Light Green (E G&#x266F; B)</option>
-                <option value="lightpurple">Level 4: Light Purple (B&#x266D; D F)</option>
-                <option value="skyblue">Level 5: Sky Blue (E&#x266D; G B&#x266D;)</option>
-            </optgroup>
-            </select>
-            </label>
         </div>
 <div class="mode-toggle-container">
     <a id="download-link" class="download-button" onclick="download_state()">

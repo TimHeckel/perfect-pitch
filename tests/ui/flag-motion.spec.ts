@@ -29,8 +29,8 @@ test("sound selector remains available while a panel is open", async ({ page }) 
   await openMenu(page);
   await page.locator("#i-infobox-trigger").click();
 
-  const selector = page.locator(".header-sound-control #instrument-selector");
-  await expect(selector).toBeVisible();
-  await selector.selectOption("guitar");
-  await expect(selector).toHaveValue("guitar");
+  const guitar = page.locator(".header-sound-control #sound-guitar");
+  await expect(guitar).toBeVisible();
+  await guitar.click();
+  await expect(guitar).toHaveAttribute("aria-pressed", "true");
 });

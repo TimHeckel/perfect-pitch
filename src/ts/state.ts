@@ -22,7 +22,7 @@ export const DEFAULT_CHORD_DISPLAY_MODE = 'shapes_and_letters';
 export const DEFAULT_SINGLE_NOTE_MODE = 'white_only_on_black';
 export const DEFAULT_SINGLE_NOTE_CORRECTNESS_MODE = 'only_correct';
 export const DEFAULT_PERSIST_REACTION_FACE = true;
-export const DEFAULT_ENABLE_ONBOARDING_HINTS = true;
+export const DEFAULT_ENABLE_ONBOARDING_HINTS = false;
 export const DEFAULT_COLOR_SCHEME = 'light';
 export const DEFAULT_CHORD_SELECTION_MODE = 'random';
 
@@ -101,6 +101,7 @@ export function newProfile(
         stats: newStats(),
         current_chord: DEFAULT_CHORD,
         current_instrument: DEFAULT_INSTRUMENT,
+        level_started_at: getCurrentTimestamp(),
     };
 }
 
@@ -116,6 +117,7 @@ export function initializeProfileDefaults(profile: Profile): void {
         color_scheme: DEFAULT_COLOR_SCHEME,
         chord_selection_mode: DEFAULT_CHORD_SELECTION_MODE,
         current_instrument: DEFAULT_INSTRUMENT,
+        level_started_at: getCurrentTimestamp(),
     };
 
     for (const [key, defaultVal] of Object.entries(defaults)) {
@@ -134,6 +136,9 @@ export function initializeProfileDefaults(profile: Profile): void {
     }
     if (profile.stats && profile.stats.identifications >= profile.target_number) {
         profile.stats.done = true;
+    }
+    if (profile.current_instrument === 'guitar-strummed') {
+        profile.current_instrument = 'guitar';
     }
 }
 

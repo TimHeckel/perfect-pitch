@@ -13,9 +13,9 @@ for (const viewport of tabletViewports) {
     await page.goto("/");
 
     await expect(page.locator("#play-button")).toBeVisible();
-    await expect(page.locator("#chord-selector")).toBeVisible();
-    await expect(page.locator("#instrument-selector")).toBeVisible();
-    await expect(page.locator(".header-sound-control #instrument-selector")).toBeVisible();
+    await expect(page.locator("#chord-selector")).toHaveCount(0);
+    await expect(page.locator("#sound-piano")).toBeVisible();
+    await expect(page.locator("#sound-guitar")).toBeVisible();
 
     const layout = await page.evaluate(() => {
       const rect = (selector: string) => {
@@ -47,8 +47,8 @@ for (const viewport of tabletViewports) {
         viewportHeight: window.innerHeight,
         viewportWidth: window.innerWidth,
         play: rect("#play-button"),
-        chordSelector: rect("#chord-selector"),
-        audioSelector: rect("#instrument-selector"),
+        piano: rect("#sound-piano"),
+        guitar: rect("#sound-guitar"),
         flags,
       };
     });
@@ -56,8 +56,8 @@ for (const viewport of tabletViewports) {
     expect(layout.bodyHeight).toBeLessThanOrEqual(layout.viewportHeight + 1);
     expect(layout.play.width).toBeGreaterThanOrEqual(44);
     expect(layout.play.height).toBeGreaterThanOrEqual(44);
-    expect(layout.chordSelector.height).toBeGreaterThanOrEqual(40);
-    expect(layout.audioSelector.height).toBeGreaterThanOrEqual(40);
+    expect(layout.piano.height).toBeGreaterThanOrEqual(32);
+    expect(layout.guitar.height).toBeGreaterThanOrEqual(32);
     expect(layout.flags).toHaveLength(2);
 
     for (const flag of layout.flags) {

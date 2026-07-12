@@ -199,7 +199,7 @@ body.colorscheme-light .infobox-container.active .infobox-trigger i.fa {
 
 .header-sound-control {
   height: 42px;
-  padding: 0 8px 0 11px;
+  padding: 0 5px 0 11px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -224,17 +224,25 @@ body.colorscheme-light .infobox-container.active .infobox-trigger i.fa {
   text-transform: uppercase;
 }
 
-.header-sound-control select {
-  width: 8.5em;
-  height: 100%;
-  padding: 0 24px 0 0;
+.sound-choice {
+  min-height: 32px;
+  padding: 0 11px;
   border: 0;
+  border-radius: 999px;
   outline: 0;
-  color: var(--ink);
+  color: var(--muted);
   background: transparent;
   cursor: pointer;
   font-size: 12px;
   font-weight: 750;
+  transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.sound-choice:hover { color: var(--ink); }
+.sound-choice.active {
+  color: white;
+  background: var(--pine);
+  box-shadow: 0 4px 12px rgba(22,63,54,.18);
 }
 
 .account-short { display: none; }
@@ -277,7 +285,7 @@ div.hamburger { display: none; }
   padding: clamp(4px, 1.2vh, 14px) clamp(2px, 1vw, 10px) 0;
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 24px;
   flex: 0 0 auto;
   animation: trail-heading-in 480ms cubic-bezier(.2,.8,.2,1) both;
@@ -353,6 +361,18 @@ div.control-container {
   line-height: 1.2;
 }
 
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 #audio-status.error { color: #a7352c; }
 
 #audio-bank {
@@ -367,8 +387,8 @@ div.control-container {
 div.controls { gap: 14px; }
 
 div.controls a {
-  width: clamp(62px, 8vh, 82px);
-  height: clamp(62px, 8vh, 82px);
+  width: clamp(78px, 10vh, 104px);
+  height: clamp(78px, 10vh, 104px);
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -381,7 +401,8 @@ div.controls a {
 
 div.controls a#play-button,
 div.controls a#next-chord { position: relative; }
-div.controls a#play-button::after {
+div.controls a#play-button::after,
+div.controls a#next-chord::after {
   content: "";
   position: absolute;
   inset: -7px;
@@ -390,7 +411,8 @@ div.controls a#play-button::after {
   opacity: 0;
   transform: scale(.86);
 }
-div.controls a#play-button:hover::after {
+div.controls a#play-button:hover::after,
+div.controls a#next-chord:hover::after {
   opacity: 1;
   transform: scale(1);
   transition: opacity 180ms ease, transform 260ms cubic-bezier(.2,.8,.2,1);
@@ -398,15 +420,14 @@ div.controls a#play-button:hover::after {
 
 div.controls a#next-chord { background: var(--pine); }
 
-div.controls a#next-chord:not(.deactivated)::after {
-  content: "";
-  position: absolute;
-  inset: -7px;
-  border: 2px solid color-mix(in srgb, var(--pine) 32%, transparent);
-  border-radius: 50%;
+div.controls a#play-button.ready-action::after,
+div.controls a#next-chord.ready-action::after {
+  opacity: 1;
   pointer-events: none;
-  animation: next-ready 2.1s ease-in-out infinite;
+  animation: action-ready 2.6s ease-in-out infinite;
 }
+
+div.controls a#next-chord::after { border-color: color-mix(in srgb, var(--pine) 32%, transparent); }
 
 div.controls a:hover:not(.deactivated) {
   transform: scale(1.045);
@@ -418,7 +439,7 @@ body.colorscheme-light div.controls i.fa,
 body.colorscheme-dark div.controls i.fa {
   margin: 0;
   color: white;
-  font-size: clamp(26px, 3.5vh, 38px);
+  font-size: clamp(31px, 4.3vh, 45px);
 }
 
 div.controls a.deactivated {
@@ -566,43 +587,6 @@ div.flag-selected.flag-incorrect::before { content: "Your pick"; }
 div.flag-correct:not(.flag-selected)::before { content: "Answer"; }
 
 div.chord-notes-container { width: min(80%, 12em); }
-
-body.colorscheme-light #onboarding-overlay,
-body.colorscheme-dark #onboarding-overlay {
-  border: 0;
-  color: var(--ink);
-  background: transparent;
-  backdrop-filter: none;
-}
-
-#onboarding-overlay .onboarding-arrow {
-  color: var(--accent);
-  filter: drop-shadow(0 6px 8px rgba(185,67,49,.18));
-}
-
-#onboarding-overlay .onboarding-text {
-  max-width: 560px;
-  padding: 12px 18px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--paper-raised) 96%, transparent);
-  box-shadow: 0 14px 34px rgba(22,63,54,.16);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(22px, 3vw, 34px);
-  line-height: 1.08;
-  letter-spacing: -.025em;
-}
-
-#onboarding-overlay[data-step="guess"],
-#onboarding-overlay[data-step="goNext"] {
-  justify-content: flex-start;
-  padding-top: 8px;
-}
-
-#onboarding-overlay[data-step="guess"] .onboarding-text,
-#onboarding-overlay[data-step="goNext"] .onboarding-text {
-  font-size: clamp(18px, 2.2vw, 26px);
-}
 
 div.stats {
   min-width: 290px;
@@ -881,7 +865,7 @@ body.colorscheme-dark #profile-switcher .switcher-item.active {
   88% { transform: translateY(-3px) scale(1.01); }
 }
 
-@keyframes next-ready {
+@keyframes action-ready {
   0%, 100% { opacity: .28; transform: scale(.9); }
   50% { opacity: .8; transform: scale(1.08); }
 }
@@ -906,9 +890,9 @@ body.colorscheme-dark #profile-switcher .switcher-item.active {
   #sync-status { display: none; }
   .account-button { padding: 9px 12px; font-size: 12px; }
   .account-cluster { gap: 7px; }
-  .header-sound-control { height: 44px; padding-inline: 8px 5px; gap: 4px; }
+  .header-sound-control { height: 44px; padding-inline: 6px; gap: 3px; }
   .header-sound-control > span { display: none; }
-  .header-sound-control select { width: 78px; padding-right: 16px; font-size: 11px; }
+  .sound-choice { min-height: 34px; padding-inline: 9px; font-size: 11px; }
   div.hamburger { position: static; display: block; margin: 0; font-size: 24px; order: 4; }
   div.hamburger a { width: 38px; height: 38px; display: grid; place-items: center; color: var(--ink); }
   div.expansion-container { display: none; }
@@ -946,8 +930,6 @@ body.colorscheme-dark #profile-switcher .switcher-item.active {
     min-height: clamp(120px, 21vh, 190px);
   }
   div.stats { min-width: 240px; }
-  div.selectors #chord-selector { width: min(57vw, 24ch); }
-  div.selectors #instrument-selector { width: min(33vw, 12ch); }
   .profile-info-container .entry-row { display: flex; flex-wrap: wrap; gap: 6px; }
   .profile-info-container .entry-row > label:first-child { width: 100%; }
   .profile-info-container .entry-row > input,
@@ -962,9 +944,9 @@ body.colorscheme-dark #profile-switcher .switcher-item.active {
   div.menu-container { gap: 6px; }
   .brand-mark { gap: 6px; font-size: 18px; }
   .brand-trailmark { width: 32px; height: 32px; }
-  .header-sound-control { padding-inline: 5px 2px; }
+  .header-sound-control { padding-inline: 4px; }
   .header-sound-control > i { display: none; }
-  .header-sound-control select { width: 70px; }
+  .sound-choice { padding-inline: 7px; font-size: 10px; }
   .account-button { padding-inline: 10px; }
   .account-long { display: none; }
   .account-short { display: inline; }
@@ -989,7 +971,7 @@ body.colorscheme-dark #profile-switcher .switcher-item.active {
   .trail-context small { display: none; }
   .trail-heading h1 { font-size: 22px; }
   div.control-wrapper { padding-top: 2px; }
-  div.controls a { width: 54px; height: 54px; }
+  div.controls a { width: 68px; height: 68px; }
   div.flag-container.flags-expanded > div.flag-wrapper { min-height: 110px; max-height: 20vh; }
   div.stats-display { font-size: 23px; }
   div.emoji-container { font-size: 28px; }

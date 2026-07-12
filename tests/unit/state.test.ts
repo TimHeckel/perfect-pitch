@@ -21,6 +21,7 @@ describe('initializeProfileDefaults', () => {
         expect(partial.chord_display_mode).toBe('shapes_and_letters');
         expect(partial.persist_reaction_face).toBe(true);
         expect(partial.current_instrument).toBe(DEFAULT_INSTRUMENT);
+        expect(partial.level_started_at).toEqual(expect.any(Number));
     });
 
     it('does not overwrite existing values', () => {
@@ -36,6 +37,15 @@ describe('initializeProfileDefaults', () => {
         const profile = {
             name: 'Test', icon: 'fa-user', id: 1,
             current_instrument: 'guitar',
+        } as unknown as Profile;
+        initializeProfileDefaults(profile);
+        expect(profile.current_instrument).toBe('guitar');
+    });
+
+    it('migrates the retired strummed guitar choice', () => {
+        const profile = {
+            name: 'Test', icon: 'fa-user', id: 1,
+            current_instrument: 'guitar-strummed',
         } as unknown as Profile;
         initializeProfileDefaults(profile);
         expect(profile.current_instrument).toBe('guitar');

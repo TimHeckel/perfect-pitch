@@ -3,18 +3,9 @@ import { test, expect } from "@playwright/test";
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.clear();
-    // Seed session history so onboarding guess/success/retry overlays are skipped
-    localStorage.setItem(
-      "bsharp_session_history",
-      JSON.stringify({ "100": { chord: [{ identifications: 1 }] } }),
-    );
     (window as any).__bsharp_test_deterministic_color = "red";
   });
   await page.goto("/");
-  // Hide the play onboarding overlay (always shown on init)
-  await page.locator("#onboarding-overlay").evaluate((el) => {
-    el.classList.remove("visible");
-  });
 });
 
 test("baseline flag outlines", async ({ page }) => {
@@ -170,9 +161,6 @@ test("tablet layout at high level - no menu overlap", async ({ page }) => {
     (window as any).__bsharp_test_deterministic_color = "red";
   }, seedStateAtLevel("skyblue"));
   await page.goto("/");
-  await page.locator("#onboarding-overlay").evaluate((el) => {
-    el.classList.remove("visible");
-  });
 
   await expect(page).toHaveScreenshot("tablet-high-level.png");
 });
@@ -188,9 +176,6 @@ test("mobile layout at high level", async ({ page }) => {
     (window as any).__bsharp_test_deterministic_color = "red";
   }, seedStateAtLevel("skyblue"));
   await page.goto("/");
-  await page.locator("#onboarding-overlay").evaluate((el) => {
-    el.classList.remove("visible");
-  });
 
   await expect(page).toHaveScreenshot("mobile-high-level.png");
 });
@@ -207,9 +192,6 @@ test("tablet layout at low level", async ({ page }) => {
     (window as any).__bsharp_test_deterministic_color = "red";
   }, seedStateAtLevel("blue"));
   await page.goto("/");
-  await page.locator("#onboarding-overlay").evaluate((el) => {
-    el.classList.remove("visible");
-  });
 
   await expect(page).toHaveScreenshot("tablet-low-level.png");
 });

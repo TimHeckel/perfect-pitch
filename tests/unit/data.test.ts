@@ -30,26 +30,22 @@ describe('audio file data integrity', () => {
         expect(INSTRUMENTS).toEqual([
             { id: 'piano_1', display: 'Piano', chordPath: 'piano' },
             { id: 'guitar', display: 'Guitar', chordPath: 'guitar' },
-            { id: 'guitar-strummed', display: 'Guitar (Strummed)', chordPath: 'guitar-strummed' },
         ]);
     });
 
-    it('has piano, guitar, and strummed guitar files for each chord', () => {
+    it('has piano and guitar files for each chord', () => {
         for (const chord of CHORD_DEFINITIONS) {
             const pianoMatches = AUDIO_FILE_LIST.filter(f => f.startsWith('piano/') && f.includes(`_${chord.name}_`));
             const guitarMatches = AUDIO_FILE_LIST.filter(f => f.startsWith('guitar/') && f.includes(`_${chord.name}.`));
-            const strummedMatches = AUDIO_FILE_LIST.filter(f => f.startsWith('guitar-strummed/') && f.includes(`_${chord.name}.`));
-
             expect(pianoMatches).toHaveLength(3);
             expect(guitarMatches).toHaveLength(1);
-            expect(strummedMatches).toHaveLength(1);
         }
     });
 
-    it('every chord name appears in exactly 3 audio files', () => {
+    it('every chord name appears in exactly 4 audio files', () => {
         for (const chord of CHORD_DEFINITIONS) {
             const matches = AUDIO_FILE_LIST.filter(f => f.includes(`_${chord.name}_`) || f.includes(`_${chord.name}.`));
-            expect(matches).toHaveLength(5);
+            expect(matches).toHaveLength(4);
         }
     });
 });

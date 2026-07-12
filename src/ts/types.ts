@@ -61,6 +61,7 @@ export interface Profile {
     stats: SessionStats;
     current_chord: string;
     current_instrument: string;
+    level_started_at: number;
 }
 
 export interface AppState {

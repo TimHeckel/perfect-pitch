@@ -34,7 +34,7 @@ test("next button is deactivated until flag selected", async ({ page }) => {
         getComputedStyle(element, "::after").animationName,
       ),
     )
-    .toBe("next-ready");
+    .toBe("action-ready");
 });
 
 test("selecting a flag shows correct or incorrect feedback", async ({
