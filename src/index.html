@@ -7,7 +7,7 @@
         <meta name="viewport"
               content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
         <meta http-equiv="Content-Language" content="en">
-        <meta name="color-scheme" content="light dark">
+        <meta name="color-scheme" content="light">
         <meta name="theme-color" content="#163f36">
         <meta name="description" content="Follow the color trail to stronger musical ears. A free, family-friendly chord trainer with separate child profiles and synced progress.">
         <meta property="og:title" content="Pitch Trail">
@@ -123,17 +123,18 @@
                            controls
                            playsinline
                            preload="metadata"
-                           poster="static/video/pitch-trail-intro-poster.png?v=20260712-2"
+                           poster="static/video/pitch-trail-intro-poster.png?v=20260712-3"
                            aria-label="How to use Pitch Trail">
-                        <source src="static/video/pitch-trail-intro.mp4?v=20260712-2" type="video/mp4">
-                        <track kind="captions" src="static/video/pitch-trail-intro.vtt?v=20260712-2" srclang="en" label="English" default>
+                        <source src="static/video/pitch-trail-intro.mp4?v=20260712-3" type="video/mp4">
+                        <track kind="captions" src="static/video/pitch-trail-intro.vtt?v=20260712-3" srclang="en" label="English" default>
                         Your browser does not support embedded video.
                     </video>
-                    <figcaption><span>How to follow the listening trail</span><span>22 seconds</span></figcaption>
+                    <figcaption><span>How to follow the listening trail</span><span>26 seconds</span></figcaption>
                 </figure>
                 <div class="guide-copy">
                     <p>Pitch Trail follows <a href="https://www.ganbar.us/documents/sakakibara_2012_chord_identification.pdf">Eguchi's Chord Identification method</a>: listen, choose the matching color, and add new chords gradually. See also the <a href="https://ichionkai.co.jp/english4.html">Ichionkai Perfect Pitch Program</a>.</p>
                     <ol class="guide-steps" aria-label="Practice rhythm">
+                        <li><strong>Ear first. Names later.</strong><span>Colors are easy names for whole chord sounds. After nine colors are strong, note names fade in after each answer.</span></li>
                         <li><strong>Meet the colors.</strong><span>Use the music-note explorer to tap red and yellow and learn their sounds.</span></li>
                         <li><strong>Keep it tiny.</strong><span>Short trails continuously revisit the sounds that need more practice.</span></li>
                         <li><strong>Grow automatically.</strong><span>Strong recent trails add one new color, with no calendar wait.</span></li>
@@ -168,9 +169,14 @@
 
             <!-- "Add profile" / "Profile settings" dialog -->
             <div class="profile-info-container panel" id="profile-info-container">
-                <div id="profile-switcher"></div>
+                <div class="profile-panel-intro">
+                    <p class="panel-kicker">Family trails</p>
+                    <h2 id="profile-panel-title">Who is practicing?</h2>
+                    <p id="profile-panel-help">Choose Me or a child. Every person keeps a separate trail, icon, and question count.</p>
+                </div>
+                <div id="profile-switcher" role="navigation" aria-label="Family profiles"></div>
                 <div class="entry-row">
-                    <label for="profile_name">Profile Name:</label>
+                    <label id="profile-name-label" for="profile_name_setting">Profile name</label>
                     <input type="text" id="profile_name_setting" class="entry">
                 </div>
                 <fieldset class="profile-setting-group">
@@ -198,7 +204,7 @@
                 </fieldset>
                 <fieldset class="profile-setting-group">
                     <legend>Questions per trail</legend>
-                    <p>Each checkpoint rolls straight into the next trail.</p>
+                    <p id="trail-length-help">Saved only for this person. Difficulty still adapts automatically.</p>
                     <div class="trail-length-presets">
                         <input type="radio" name="target_number_setting" value="5" id="trail-length-5">
                         <label for="trail-length-5"><strong>5</strong><span>Quick</span></label>
@@ -208,20 +214,13 @@
                         <label for="trail-length-15"><strong>15</strong><span>Long</span></label>
                     </div>
                 </fieldset>
-                <div class="entry-row">
-                    <label for="color_scheme_setting">Color scheme:</label>
-                    <select class="selector" name="color_scheme_setting" id="color-scheme-selector">
-                        <option value="dark">Dark</option>
-                        <option value="light">Light</option>
-                    </select>
-                </div>
                 <!-- Buttons are hidden by default (.profile-info-container button { display: none }).
                      Use "settings-button" for profile-edit buttons or "add-button" for profile-add buttons;
                      ui.ts adds .visible to the appropriate class when the panel opens. -->
                 <div class="button-container">
-                    <button class="button settings-button" id="delete-profile-button" onclick="delete_profile()">Delete Profile</button>
+                    <button class="button settings-button" id="delete-profile-button" onclick="delete_profile()">Delete child</button>
                     <button class="button settings-button" id="submit-changes-button" onclick="submit_profile_changes()">Save Changes</button>
-                    <button class="button add-button" id="add-user-button" onclick="add_profile()">Add Profile</button>
+                    <button class="button add-button" id="add-user-button" onclick="add_profile()">Add child</button>
                 </div>
             </div>
         </div>
@@ -524,6 +523,10 @@
             </button>
             <div id="auth-divider" class="auth-divider hidden"><span>or</span></div>
             <form id="account-form" data-mode="signup">
+                <div id="adult-name-row">
+                    <label for="account-name-input">Your name</label>
+                    <input id="account-name-input" name="adultName" type="text" autocomplete="name" maxlength="40" required>
+                </div>
                 <label for="account-email-input">Adult email</label>
                 <input id="account-email-input" name="email" type="email" autocomplete="email" required>
                 <label for="account-password-input">Password</label>
@@ -540,6 +543,7 @@
         <div id="account-signed-in" class="hidden">
             <p class="dialog-kicker">Family basecamp</p>
             <h2>Your trail is synced.</h2>
+            <p id="account-display-name" class="account-display-name"></p>
             <p id="account-email" class="account-email"></p>
             <p>Add or switch child profiles from the profile button in the top navigation.</p>
             <button id="account-logout" class="secondary-action" type="button">Sign out on this device</button>

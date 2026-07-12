@@ -21,7 +21,7 @@ describe('initializeProfileDefaults', () => {
         const partial = { name: 'Test', icon: 'fa-user', id: 1 } as unknown as Profile;
         initializeProfileDefaults(partial);
         expect(partial.show_chord_mode).toBe('black_only');
-        expect(partial.reveal_chord_mode).toBe('always');
+        expect(partial.reveal_chord_mode).toBe('after_guess');
         expect(partial.chord_display_mode).toBe('shapes_and_letters');
         expect(partial.persist_reaction_face).toBe(true);
         expect(partial.current_instrument).toBe(DEFAULT_INSTRUMENT);

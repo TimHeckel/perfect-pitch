@@ -2,12 +2,14 @@ import {
     exportCloudData,
     replaceCloudData,
     resetToGuest,
+    ensureOwnerProfile,
     GUEST_USER_ID,
 } from './state';
 
 interface User {
     id: string;
     email: string;
+    displayName: string;
 }
 
 interface SyncResponse {
@@ -36,6 +38,7 @@ export async function initCloudSync(): Promise<void> {
             return;
         }
         const data = await response.json() as { user: User };
+        ensureOwnerProfile(data.user.displayName);
         currentUser = data.user;
         setAccountUi(currentUser);
         await pullOrSeedCloud();
@@ -77,13 +80,17 @@ function installAccountUi(): void {
 function setAuthMode(mode: 'signup' | 'login'): void {
     const form = document.getElementById('account-form') as HTMLFormElement;
     const adultRow = document.getElementById('adult-confirmation');
+    const adultNameRow = document.getElementById('adult-name-row');
+    const adultNameInput = document.getElementById('account-name-input') as HTMLInputElement | null;
     const adultCheckbox = document.querySelector<HTMLInputElement>('#adult-confirmation input');
     const password = document.getElementById('account-password-input') as HTMLInputElement | null;
     const submit = document.getElementById('account-submit');
     const title = document.getElementById('account-dialog-title');
     form.dataset.mode = mode;
     adultRow?.classList.toggle('hidden', mode !== 'signup');
+    adultNameRow?.classList.toggle('hidden', mode !== 'signup');
     if (adultCheckbox) adultCheckbox.required = mode === 'signup';
+    if (adultNameInput) adultNameInput.required = mode === 'signup';
     if (password) password.autocomplete = mode === 'signup' ? 'new-password' : 'current-password';
     if (submit) submit.textContent = mode === 'signup' ? 'Create family account' : 'Sign in';
     if (title) title.textContent = mode === 'signup' ? 'Sign Up To Save Progress' : 'Sign In To Save Progress';
@@ -131,11 +138,13 @@ async function submitAuthForm(event: SubmitEvent): Promise<void> {
             body: JSON.stringify({
                 email: data.get('email'),
                 password: data.get('password'),
+                adultName: data.get('adultName'),
                 isAdult: data.get('isAdult') === 'on',
             }),
         });
         const result = await response.json() as { user?: User; error?: string };
         if (!response.ok || !result.user) throw new Error(result.error ?? 'Unable to continue.');
+        ensureOwnerProfile(result.user.displayName);
         currentUser = result.user;
         setAccountUi(currentUser, 'Syncing…');
         if (mode === 'signup') await flushSync();
@@ -166,18 +175,33 @@ async function pullOrSeedCloud(): Promise<void> {
     const response = await fetch('/api/sync', { headers: { Accept: 'application/json' } });
     if (!response.ok) return;
     const remote = await response.json() as SyncResponse;
-    const hasRemoteChildren = Object.keys(remote.state.profiles).length > 0;
+    const hasRemoteProfiles = Object.keys(remote.state.profiles).length > 0;
     const local = exportCloudData();
-    const hasLocalChildren = Object.values(local.state.profiles).some((profile) => profile.id !== GUEST_USER_ID);
+    const localOwner = Object.values(local.state.profiles).find((profile) => profile.role === 'owner');
+    const hasLocalProfiles = Object.values(local.state.profiles).some((profile) => profile.id !== GUEST_USER_ID);
 
-    if (hasRemoteChildren) {
+    if (hasRemoteProfiles) {
+        const remoteHasOwner = Object.values(remote.state.profiles).some((profile) => profile.role === 'owner');
+        if (!remoteHasOwner && localOwner) {
+            let ownerToMerge = localOwner;
+            if (remote.state.profiles[String(ownerToMerge.id)]) {
+                const nextId = Math.max(
+                    GUEST_USER_ID,
+                    ...Object.values(remote.state.profiles).map((profile) => profile.id),
+                ) + 1;
+                ownerToMerge = { ...localOwner, id: nextId };
+            }
+            remote.state.profiles[String(ownerToMerge.id)] = ownerToMerge;
+            remote.history[String(ownerToMerge.id)] = local.history[String(localOwner.id)] ?? {};
+        }
         replaceCloudData({
             profiles: remote.state.profiles,
             current_profile: remote.state.current_profile ?? undefined,
             current_chord: remote.state.current_chord,
         }, remote.history);
+        if (!remoteHasOwner) await flushSync();
         setAccountUi(currentUser, 'Progress synced');
-    } else if (hasLocalChildren) {
+    } else if (hasLocalProfiles) {
         await flushSync();
     } else {
         setAccountUi(currentUser, 'Ready to sync');
@@ -227,6 +251,7 @@ function setAccountUi(user: User | null, status?: string): void {
     const signedOut = document.getElementById('account-signed-out');
     const signedIn = document.getElementById('account-signed-in');
     const email = document.getElementById('account-email');
+    const displayName = document.getElementById('account-display-name');
     const sync = document.getElementById('sync-status');
     if (accountButton) {
         const longLabel = accountButton.querySelector('.account-long');
@@ -243,6 +268,7 @@ function setAccountUi(user: User | null, status?: string): void {
     signedOut?.classList.toggle('hidden', Boolean(user));
     signedIn?.classList.toggle('hidden', !user);
     if (email) email.textContent = user?.email ?? '';
+    if (displayName) displayName.textContent = user?.displayName ?? '';
     if (sync) sync.textContent = status ?? (user ? 'Progress synced' : 'Guest mode');
 }
 

@@ -9,13 +9,14 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
-test("profile settings expose only identity, trail length, and appearance", async ({ page }) => {
+test("profile settings expose only identity and per-person trail length", async ({ page }) => {
   await openProfilePanel(page);
 
   await expect(page.locator("#profile_name_setting")).toBeVisible();
   await expect(page.locator(".profile-icon-picker")).toBeVisible();
   await expect(page.locator(".trail-length-presets")).toBeVisible();
-  await expect(page.locator("#color-scheme-selector")).toBeVisible();
+  await expect(page.locator("#color-scheme-selector")).toHaveCount(0);
+  await expect(page.locator("#trail-length-help")).toContainText("Saved only for");
   await expect(page.locator("#show-chord-name-mode-selector")).toHaveCount(0);
   await expect(page.locator("#chord-selection-mode-selector")).toHaveCount(0);
   await expect(page.getByText("Pin screen:", { exact: true })).toHaveCount(0);
@@ -63,9 +64,11 @@ test("switching profiles preserves the earned route and instrument", async ({ pa
   await expect(page.locator("#sound-guitar")).toHaveAttribute("aria-pressed", "true");
 });
 
-test("color scheme remains a simple profile choice", async ({ page }) => {
-  await openProfilePanel(page);
-  await page.locator("#color-scheme-selector").selectOption("dark");
-  await page.locator("#submit-changes-button").click();
-  await expect(page.locator("body")).toHaveClass(/colorscheme-dark/);
+test("the default light appearance is fixed across profiles", async ({ page }) => {
+  await expect(page.locator("body")).toHaveClass(/colorscheme-light/);
+  await expect(page.locator("body")).not.toHaveClass(/colorscheme-dark/);
+  await expect.poll(() => page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("bsharp_state")!);
+    return Object.values(state.profiles).every((profile: any) => profile.color_scheme === "light");
+  })).toBe(true);
 });

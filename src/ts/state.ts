@@ -18,7 +18,7 @@ export const DEFAULT_INSTRUMENT = 'piano_1';
 export const DEFAULT_TARGET_NUMBER = 10;
 export const TRAIL_LENGTH_PRESETS = [5, 10, 15] as const;
 export const DEFAULT_SHOW_CHORD_MODE = 'black_only';
-export const DEFAULT_REVEAL_CHORD_MODE = 'always';
+export const DEFAULT_REVEAL_CHORD_MODE = 'after_guess';
 export const DEFAULT_CHORD_DISPLAY_MODE = 'shapes_and_letters';
 export const DEFAULT_SINGLE_NOTE_MODE = 'white_only_on_black';
 export const DEFAULT_SINGLE_NOTE_CORRECTNESS_MODE = 'only_correct';
@@ -104,6 +104,7 @@ export function newProfile(
         current_instrument: DEFAULT_INSTRUMENT,
         level_started_at: getCurrentTimestamp(),
         introduced_chords: [...DEFAULT_INTRODUCED_CHORDS],
+        role: 'learner',
     };
 }
 
@@ -142,6 +143,8 @@ export function initializeProfileDefaults(profile: Profile): void {
     if (profile.chord_selection_mode !== 'adaptive') {
         profile.chord_selection_mode = 'adaptive';
     }
+    profile.color_scheme = DEFAULT_COLOR_SCHEME;
+    profile.reveal_chord_mode = DEFAULT_REVEAL_CHORD_MODE;
     if (!Array.isArray(profile.introduced_chords)) {
         const currentIndex = Object.keys(CHORDS_TONE).indexOf(profile.current_chord);
         profile.introduced_chords = Object.keys(CHORDS_TONE).slice(0, Math.max(2, currentIndex + 1));
@@ -285,18 +288,51 @@ export function exportCloudData(): { state: AppState; history: Record<string, Re
     };
 }
 
+export function ensureOwnerProfile(displayName: string): Profile {
+    const existingOwner = Object.values(STATE.profiles).find((profile) => profile.role === 'owner');
+    if (existingOwner) {
+        if (displayName && ['Guest', 'Me'].includes(existingOwner.name)) {
+            existingOwner.name = displayName;
+            saveState();
+        }
+        return existingOwner;
+    }
+
+    const guest = STATE.profiles[GUEST_USER_ID] ?? newProfile('Guest', 'fa-user', GUEST_USER_ID);
+    let ownerId = GUEST_USER_ID + 1;
+    while (ownerId in STATE.profiles) ownerId++;
+    const owner: Profile = {
+        ...guest,
+        id: ownerId,
+        name: displayName || 'Me',
+        role: 'owner',
+    };
+    STATE.profiles[ownerId] = owner;
+    delete STATE.profiles[GUEST_USER_ID];
+    if (STATE.current_profile === GUEST_USER_ID) STATE.current_profile = ownerId;
+
+    const history = getSessionHistory();
+    const guestHistory = history[String(GUEST_USER_ID)];
+    if (guestHistory && !history[String(ownerId)]) history[String(ownerId)] = guestHistory;
+    delete history[String(GUEST_USER_ID)];
+    saveState();
+    setObject(SESSION_HISTORY_KEY, history);
+    return owner;
+}
+
 export function replaceCloudData(
     cloudState: Partial<AppState>,
     history: Record<string, Record<string, SessionStats[]>>,
 ): void {
-    const guest = STATE.profiles[GUEST_USER_ID] ?? newProfile('Guest', 'fa-user', GUEST_USER_ID);
     const cloudProfiles = cloudState.profiles ?? {};
     STATE = {
-        profiles: { ...cloudProfiles, [GUEST_USER_ID]: guest },
+        profiles: { ...cloudProfiles },
         current_chord: cloudState.current_chord ?? DEFAULT_CHORD,
         current_profile: cloudState.current_profile && cloudProfiles[cloudState.current_profile]
             ? cloudState.current_profile
-            : Object.values(cloudProfiles)[0]?.id ?? GUEST_USER_ID,
+            : Object.values(cloudProfiles).find((profile) => profile.role === 'owner')?.id
+                ?? Object.values(cloudProfiles)[0]?.id
+                ?? GUEST_USER_ID,
     };
     for (const profile of Object.values(STATE.profiles)) initializeProfileDefaults(profile);
     _SESSION_HISTORY = history;

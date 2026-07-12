@@ -338,14 +338,9 @@ declare global {
 }
 
 export function applyColorScheme(scheme: string): void {
-    if (scheme === 'light') {
-        document.body.classList.remove('colorscheme-dark');
-        document.body.classList.add('colorscheme-light');
-    } else {
-        document.body.classList.remove('colorscheme-light');
-        document.body.classList.add('colorscheme-dark');
-    }
-    window.BSharpAndroid?.setTheme(scheme !== 'light');
+    document.body.classList.remove('colorscheme-dark');
+    document.body.classList.add('colorscheme-light');
+    window.BSharpAndroid?.setTheme(false);
 }
 
 // --- Profile UI ---
@@ -375,9 +370,12 @@ function populateProfileSwitcher(): void {
 
     const currentId = getCurrentProfile().id;
 
-    // Add non-guest profiles first, then guest
-    const profiles = Object.values(STATE.profiles).filter(p => p.id !== GUEST_USER_ID);
-    profiles.push(STATE.profiles[GUEST_USER_ID]);
+    const allProfiles = Object.values(STATE.profiles);
+    const me = allProfiles.find((profile) => profile.role === 'owner')
+        ?? STATE.profiles[GUEST_USER_ID];
+    const profiles = me
+        ? [me, ...allProfiles.filter((profile) => profile.id !== me.id)]
+        : allProfiles;
 
     for (const profile of profiles) {
         const btn = document.createElement('button');
@@ -388,6 +386,16 @@ function populateProfileSwitcher(): void {
         const icon = document.createElement('i');
         icon.classList.add('fa', 'fa-solid', profile.icon);
         btn.appendChild(icon);
+
+        const label = document.createElement('span');
+        label.classList.add('switcher-label');
+        const isMe = profile.role === 'owner' || profile.id === GUEST_USER_ID;
+        label.textContent = isMe ? 'Me' : profile.name;
+        btn.appendChild(label);
+        const tooltip = isMe ? `Edit my trail (${profile.name})` : `Switch to ${profile.name}`;
+        btn.dataset.tooltip = tooltip;
+        btn.title = tooltip;
+        btn.setAttribute('aria-label', tooltip);
 
         btn.addEventListener('click', () => {
             setCurrentProfile(profile);
@@ -404,6 +412,13 @@ function populateProfileSwitcher(): void {
     const addIcon = document.createElement('i');
     addIcon.classList.add('fa', 'fa-solid', 'fa-plus');
     addBtn.appendChild(addIcon);
+    const addLabel = document.createElement('span');
+    addLabel.classList.add('switcher-label');
+    addLabel.textContent = 'Add child';
+    addBtn.appendChild(addLabel);
+    addBtn.dataset.tooltip = 'Create a separate trail for another child';
+    addBtn.title = 'Create a separate trail for another child';
+    addBtn.setAttribute('aria-label', 'Add child profile');
     addBtn.addEventListener('click', () => {
         openProfileAdder();
     });
@@ -464,7 +479,7 @@ function getProfileSettings(): {
         ?? String(DEFAULT_TARGET_NUMBER);
     const persistReactionFace = DEFAULT_PERSIST_REACTION_FACE;
     const enableOnboardingHints = false;
-    const colorScheme = (document.getElementById('color-scheme-selector') as HTMLSelectElement).value;
+    const colorScheme = DEFAULT_COLOR_SCHEME;
     const chordSelectionMode = DEFAULT_CHORD_SELECTION_MODE;
 
     return {
@@ -505,9 +520,6 @@ function clearProfileDialog(): void {
     const singleNoteCorrectnessMode = document.getElementById('single-note-trainer-correctness-mode-selector') as HTMLSelectElement;
     if (singleNoteCorrectnessMode) singleNoteCorrectnessMode.value = DEFAULT_SINGLE_NOTE_CORRECTNESS_MODE;
 
-    const colorSchemeSelector = document.getElementById('color-scheme-selector') as HTMLSelectElement;
-    if (colorSchemeSelector) colorSchemeSelector.value = DEFAULT_COLOR_SCHEME;
-
     const defaultLength = document.getElementById(`trail-length-${DEFAULT_TARGET_NUMBER}`) as HTMLInputElement | null;
     if (defaultLength) defaultLength.checked = true;
 
@@ -516,7 +528,7 @@ function clearProfileDialog(): void {
 
 function populateProfileSettings(): void {
     const profile = getCurrentProfile();
-    const isGuest = profile.id === GUEST_USER_ID;
+    const isMe = profile.id === GUEST_USER_ID || profile.role === 'owner';
     clearProfileDialog();
 
     const profileDialog = document.getElementById('profile-info-container')!;
@@ -526,6 +538,16 @@ function populateProfileSettings(): void {
 
     const profileNameElem = document.getElementById('profile_name_setting') as HTMLInputElement;
     profileNameElem.value = profile.name;
+    const title = document.getElementById('profile-panel-title');
+    const help = document.getElementById('profile-panel-help');
+    const nameLabel = document.getElementById('profile-name-label');
+    const trailHelp = document.getElementById('trail-length-help');
+    if (title) title.textContent = isMe ? 'My trail' : `${profile.name}’s trail`;
+    if (help) help.textContent = isMe
+        ? 'This is Me. My progress and settings stay separate from every child.'
+        : `Editing ${profile.name}. Switching profiles changes whose progress is recorded.`;
+    if (nameLabel) nameLabel.textContent = isMe ? 'My name' : 'Child’s name';
+    if (trailHelp) trailHelp.textContent = `Saved only for ${isMe ? 'me' : profile.name}. Difficulty still adapts automatically.`;
 
     for (const elem of profileDialog.querySelectorAll("input[name='profile_icon_selector']") as NodeListOf<HTMLInputElement>) {
         if (elem.value === profile.icon) {
@@ -541,13 +563,15 @@ function populateProfileSettings(): void {
     if (singleNoteModeElem) singleNoteModeElem.value = profile.single_note_mode;
     const singleNoteCorrectnessModeElem = document.getElementById('single-note-trainer-correctness-mode-selector') as HTMLSelectElement | null;
     if (singleNoteCorrectnessModeElem) singleNoteCorrectnessModeElem.value = profile.single_note_correctness_mode;
-    (document.getElementById('color-scheme-selector') as HTMLSelectElement).value = profile.color_scheme;
-
     profileDialog.dataset.id = String(profile.id);
 
     const deleteButtonElem = document.getElementById('delete-profile-button') as HTMLButtonElement;
-    if (isGuest) {
+    deleteButtonElem.classList.toggle('owner-locked', isMe);
+    if (profile.id === GUEST_USER_ID) {
         profileNameElem.disabled = true;
+        deleteButtonElem.disabled = true;
+    } else if (profile.role === 'owner') {
+        profileNameElem.disabled = false;
         deleteButtonElem.disabled = true;
     } else {
         profileNameElem.disabled = false;
@@ -568,6 +592,14 @@ export function openProfileAdder(): void {
         setActiveTrigger(panel);
     }
     clearProfileDialog();
+    const title = document.getElementById('profile-panel-title');
+    const help = document.getElementById('profile-panel-help');
+    const nameLabel = document.getElementById('profile-name-label');
+    const trailHelp = document.getElementById('trail-length-help');
+    if (title) title.textContent = 'Add a child';
+    if (help) help.textContent = 'Create a separate listening trail so progress never gets mixed together.';
+    if (nameLabel) nameLabel.textContent = 'Child’s name';
+    if (trailHelp) trailHelp.textContent = 'Saved only for this child. Difficulty still adapts automatically.';
     // Highlight "+" as active in switcher
     const switcher = document.getElementById('profile-switcher');
     if (switcher) {
@@ -586,8 +618,6 @@ export function openProfileAdder(): void {
     (document.getElementById('profile_name_setting') as HTMLInputElement).disabled = false;
     const defaultLength = document.getElementById(`trail-length-${DEFAULT_TARGET_NUMBER}`) as HTMLInputElement | null;
     if (defaultLength) defaultLength.checked = true;
-    (document.getElementById('color-scheme-selector') as HTMLSelectElement).value = DEFAULT_COLOR_SCHEME;
-
     // Pre-select the first icon
     const firstIcon = profileContainer.querySelector("input[name='profile_icon_selector']") as HTMLInputElement | null;
     if (firstIcon) firstIcon.checked = true;

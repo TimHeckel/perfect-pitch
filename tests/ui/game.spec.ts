@@ -168,6 +168,29 @@ test("a correct answer advances automatically after a confirmation beat", async 
   await expect(page.locator("#next-chord")).toHaveClass(/deactivated/);
 });
 
+test("note names fade in after an answer only after nine colors are mastered", async ({ page }) => {
+  await page.evaluate(() => {
+    (window as unknown as { __bsharp_test_deterministic_color: string }).__bsharp_test_deterministic_color = "red";
+    (window as unknown as { change_selector: (to: string) => void }).change_selector("gray");
+  });
+
+  const notes = page.locator("#red-flag .chord-notes-container");
+  await expect(notes).toBeHidden();
+  await page.locator("#play-button").click();
+  for (let color = 0; color < 8; color += 1) {
+    await page.locator("#hear-new-color").click();
+    await page.locator("#start-new-color-trail").click();
+  }
+  await expect(page.locator("#color-introduction-dialog")).not.toBeVisible();
+  await page.waitForTimeout(1000);
+  await page.locator("#red-flag").click();
+  await expect(page.locator("#red-flag .flag")).toHaveClass(/theory-reveal/);
+  await expect(notes).toBeVisible();
+  await expect(notes).toContainText("C");
+  await expect(notes).toContainText("E");
+  await expect(notes).toContainText("G");
+});
+
 test("reset clears stats to zero", async ({ page }) => {
   // Answer a question first
   await page.locator("#play-button").click();

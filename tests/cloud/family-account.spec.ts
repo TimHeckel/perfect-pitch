@@ -13,12 +13,14 @@ test('an adult can create a family account and sync a child profile', async ({ p
   const email = `parent-${Date.now()}-${Math.random().toString(16).slice(2)}@example.test`;
 
   await page.getByRole('button', { name: 'Save progress' }).click();
+  await page.getByLabel('Your name').fill('Taylor Parent');
   await page.getByLabel('Adult email').fill(email);
   await page.getByLabel('Password').fill('correct-horse-battery-staple');
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Create family account' }).click();
 
   await expect(page.getByRole('button', { name: 'Family' })).toBeVisible();
+  await expect(page.locator('#profile-text')).toHaveText('Taylor Parent');
   await createProfile(page, 'Milo', 'fa-bolt');
   await expect(page.locator('#profile-text')).toHaveText('Milo');
   await expect(page.locator('#sync-status')).toHaveText('Progress synced', { timeout: 5_000 });
@@ -40,8 +42,11 @@ test('sign in mode does not require the adult confirmation checkbox', async ({ p
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   const confirmation = page.locator('#adult-confirmation input');
+  const adultName = page.getByLabel('Your name');
   await expect(confirmation).toBeHidden();
   await expect(confirmation).not.toHaveAttribute('required', '');
+  await expect(adultName).toBeHidden();
+  await expect(adultName).not.toHaveAttribute('required', '');
   await expect(page.getByRole('button', { name: 'Sign in', exact: true }).last()).toBeVisible();
 });
 
@@ -76,4 +81,5 @@ test('Google sign-in starts a state- and PKCE-protected web flow', async ({ page
   expect(location.searchParams.get('state')).toBeTruthy();
   expect(location.searchParams.get('code_challenge')).toBeTruthy();
   expect(location.searchParams.get('code_challenge_method')).toBe('S256');
+  expect(location.searchParams.get('scope')).toContain('profile');
 });

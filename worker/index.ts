@@ -8,6 +8,7 @@ interface Env {
 interface AccountRow {
   id: string;
   email: string;
+  displayName: string | null;
   password_hash: string;
   password_salt: string;
 }
@@ -15,6 +16,7 @@ interface AccountRow {
 interface SessionAccount {
   id: string;
   email: string;
+  displayName: string;
 }
 
 interface ProfilePayload {
@@ -104,13 +106,15 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
 }
 
 async function signup(request: Request, env: Env): Promise<Response> {
-  const body = await readJson<{ email?: string; password?: string; isAdult?: boolean }>(request);
+  const body = await readJson<{ email?: string; password?: string; adultName?: string; isAdult?: boolean }>(request);
   if (body instanceof Response) return body;
 
   const email = normalizeEmail(body.email);
+  const displayName = normalizeDisplayName(body.adultName, email);
   const password = body.password ?? '';
   const error = validateCredentials(email, password);
   if (error) return json({ error }, 400);
+  if (!displayName) return json({ error: 'Enter your name.' }, 400);
   if (body.isAdult !== true) return json({ error: 'An adult must create and manage the family account.' }, 400);
 
   const rateKey = `signup:${clientIp(request)}:${email}`;
@@ -128,14 +132,14 @@ async function signup(request: Request, env: Env): Promise<Response> {
 
   await env.DB.batch([
     env.DB.prepare(
-      'INSERT INTO accounts (id, email, password_hash, password_salt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-    ).bind(id, email, passwordHash, salt, now, now),
+      'INSERT INTO accounts (id, email, display_name, password_hash, password_salt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).bind(id, email, displayName, passwordHash, salt, now, now),
     env.DB.prepare(
       'INSERT INTO household_settings (account_id, current_profile_id, current_chord, updated_at) VALUES (?, NULL, ?, ?)',
     ).bind(id, 'yellow', now),
   ]);
 
-  return createSession(env.DB, { id, email }, 201);
+  return createSession(env.DB, { id, email, displayName }, 201);
 }
 
 async function login(request: Request, env: Env): Promise<Response> {
@@ -150,7 +154,7 @@ async function login(request: Request, env: Env): Promise<Response> {
   }
 
   const account = await env.DB.prepare(
-    'SELECT id, email, password_hash, password_salt FROM accounts WHERE email = ?',
+    'SELECT id, email, display_name AS displayName, password_hash, password_salt FROM accounts WHERE email = ?',
   ).bind(email).first<AccountRow>();
 
   const suppliedHash = account
@@ -161,7 +165,11 @@ async function login(request: Request, env: Env): Promise<Response> {
     return json({ error: 'Email or password is incorrect.' }, 401);
   }
 
-  return createSession(env.DB, { id: account.id, email: account.email });
+  return createSession(env.DB, {
+    id: account.id,
+    email: account.email,
+    displayName: account.displayName || displayNameFromEmail(account.email),
+  });
 }
 
 function googleAuthConfigured(env: Env): boolean {
@@ -184,7 +192,7 @@ async function startGoogleAuth(env: Env, url: URL): Promise<Response> {
   authorization.searchParams.set('client_id', env.GOOGLE_CLIENT_ID!);
   authorization.searchParams.set('redirect_uri', redirectUri);
   authorization.searchParams.set('response_type', 'code');
-  authorization.searchParams.set('scope', 'openid email');
+  authorization.searchParams.set('scope', 'openid email profile');
   authorization.searchParams.set('state', state);
   authorization.searchParams.set('code_challenge', challenge);
   authorization.searchParams.set('code_challenge_method', 'S256');
@@ -238,6 +246,8 @@ async function finishGoogleAuth(request: Request, env: Env, url: URL): Promise<R
     sub?: string;
     email?: string;
     email_verified?: boolean;
+    name?: string;
+    given_name?: string;
   }>();
   const email = normalizeEmail(profile.email);
   if (!profile.sub || !profile.email_verified || !email) {
@@ -248,6 +258,7 @@ async function finishGoogleAuth(request: Request, env: Env, url: URL): Promise<R
     env.DB,
     profile.sub,
     email,
+    normalizeDisplayName(profile.name || profile.given_name, email),
     intent === 'signup',
     adultFlag === '1',
   );
@@ -264,24 +275,31 @@ async function findOrCreateGoogleAccount(
   db: D1Database,
   googleSub: string,
   email: string,
+  displayName: string,
   allowCreate: boolean,
   adultConfirmed: boolean,
 ): Promise<SessionAccount | Response> {
   const byGoogle = await db.prepare(
-    'SELECT id, email FROM accounts WHERE google_sub = ?',
+    'SELECT id, email, display_name AS displayName FROM accounts WHERE google_sub = ?',
   ).bind(googleSub).first<SessionAccount>();
-  if (byGoogle) return byGoogle;
+  if (byGoogle) {
+    if (displayName && byGoogle.displayName !== displayName) {
+      await db.prepare('UPDATE accounts SET display_name = ?, updated_at = ? WHERE id = ?')
+        .bind(displayName, unixTime(), byGoogle.id).run();
+    }
+    return { ...byGoogle, displayName: displayName || byGoogle.displayName || displayNameFromEmail(byGoogle.email) };
+  }
 
   const byEmail = await db.prepare(
-    'SELECT id, email, google_sub FROM accounts WHERE email = ?',
+    'SELECT id, email, display_name AS displayName, google_sub FROM accounts WHERE email = ?',
   ).bind(email).first<SessionAccount & { google_sub: string | null }>();
   if (byEmail) {
     if (byEmail.google_sub && byEmail.google_sub !== googleSub) {
       return authRedirectResponse('That email is already connected to another Google account.');
     }
-    await db.prepare('UPDATE accounts SET google_sub = ?, updated_at = ? WHERE id = ?')
-      .bind(googleSub, unixTime(), byEmail.id).run();
-    return { id: byEmail.id, email: byEmail.email };
+    await db.prepare('UPDATE accounts SET google_sub = ?, display_name = ?, updated_at = ? WHERE id = ?')
+      .bind(googleSub, displayName || byEmail.displayName || displayNameFromEmail(email), unixTime(), byEmail.id).run();
+    return { id: byEmail.id, email: byEmail.email, displayName: displayName || byEmail.displayName || displayNameFromEmail(email) };
   }
 
   if (!allowCreate) return authRedirectResponse('No saved account was found. Choose Create account first.');
@@ -291,13 +309,13 @@ async function findOrCreateGoogleAccount(
   const now = unixTime();
   await db.batch([
     db.prepare(
-      'INSERT INTO accounts (id, email, password_hash, password_salt, google_sub, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    ).bind(id, email, randomHex(32), randomHex(16), googleSub, now, now),
+      'INSERT INTO accounts (id, email, display_name, password_hash, password_salt, google_sub, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).bind(id, email, displayName, randomHex(32), randomHex(16), googleSub, now, now),
     db.prepare(
       'INSERT INTO household_settings (account_id, current_profile_id, current_chord, updated_at) VALUES (?, NULL, ?, ?)',
     ).bind(id, 'yellow', now),
   ]);
-  return { id, email };
+  return { id, email, displayName };
 }
 
 function authRedirectResponse(message: string): Response {
@@ -372,7 +390,10 @@ async function putSync(request: Request, env: Env, account: SessionAccount): Pro
   }
 
   const profiles = Object.values(body.state?.profiles ?? {}).filter((profile) => profile.id !== 100);
-  if (profiles.length > MAX_CHILDREN) {
+  const owners = profiles.filter((profile) => profile.role === 'owner');
+  const children = profiles.filter((profile) => profile.role !== 'owner');
+  if (owners.length > 1) return json({ error: 'A family can have only one Me profile.' }, 400);
+  if (children.length > MAX_CHILDREN) {
     return json({ error: `A family can have up to ${MAX_CHILDREN} child profiles.` }, 400);
   }
 
@@ -453,13 +474,28 @@ async function requireAccount(request: Request, env: Env): Promise<SessionAccoun
   if (!token) return json({ error: 'Sign in to sync progress.' }, 401);
 
   const account = await env.DB.prepare(`
-    SELECT accounts.id, accounts.email
+    SELECT accounts.id, accounts.email, accounts.display_name AS displayName
     FROM sessions
     JOIN accounts ON accounts.id = sessions.account_id
     WHERE sessions.token_hash = ? AND sessions.expires_at > ?
   `).bind(await sha256(token), unixTime()).first<SessionAccount>();
 
-  return account ?? json({ error: 'Your session has expired. Please sign in again.' }, 401);
+  if (!account) return json({ error: 'Your session has expired. Please sign in again.' }, 401);
+  account.displayName ||= displayNameFromEmail(account.email);
+  return account;
+}
+
+function normalizeDisplayName(value: unknown, email: string): string {
+  const name = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, 40) : '';
+  return name || displayNameFromEmail(email);
+}
+
+function displayNameFromEmail(email: string): string {
+  return email.split('@')[0]
+    .replace(/[._-]+/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .trim()
+    .slice(0, 40) || 'Me';
 }
 
 async function allowAuthAttempt(db: D1Database, key: string, limit: number): Promise<boolean> {

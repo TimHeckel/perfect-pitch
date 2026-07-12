@@ -276,7 +276,8 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     }
 
     if (_CHORDS_ON && getCurrentProfile().reveal_chord_mode === 'after_guess') {
-        document.getElementById('flag-holder')!.classList.add('chord-notes');
+        const theoryElem = isCorrect ? elem : _CORRECT_ELEM;
+        theoryElem?.classList.add('theory-reveal');
     }
 
     // Single note trainer disabled for now
@@ -310,7 +311,9 @@ export function nextAudio(): void {
     nextButton.classList.remove('ready-action');
 
     if (_CHORDS_ON && getCurrentProfile().reveal_chord_mode === 'after_guess') {
-        document.getElementById('flag-holder')!.classList.remove('chord-notes');
+        for (const flag of document.querySelectorAll('#flag-holder .theory-reveal')) {
+            flag.classList.remove('theory-reveal');
+        }
     }
 
     populateAudio();

@@ -63,6 +63,7 @@ export interface Profile {
     current_instrument: string;
     level_started_at: number;
     introduced_chords: string[];
+    role?: 'owner' | 'learner';
 }
 
 export interface AppState {

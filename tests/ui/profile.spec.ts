@@ -22,11 +22,11 @@ test("profile panel opens without JS errors", async ({ page }) => {
   expect(errors).toHaveLength(0);
 });
 
-test("panel shows Save Changes and Delete in edit mode", async ({ page }) => {
+test("Me can be edited but not deleted", async ({ page }) => {
   await openProfilePanel(page);
 
   await expect(page.locator("#submit-changes-button")).toBeVisible();
-  await expect(page.locator("#delete-profile-button")).toBeVisible();
+  await expect(page.locator("#delete-profile-button")).not.toBeVisible();
 });
 
 test("switcher shows exactly one active profile", async ({ page }) => {
@@ -34,6 +34,14 @@ test("switcher shows exactly one active profile", async ({ page }) => {
 
   const activeItems = page.locator("#profile-switcher .switcher-profile.active");
   await expect(activeItems).toHaveCount(1);
+});
+
+test("switcher labels Me and Add child with explicit help", async ({ page }) => {
+  await openProfilePanel(page);
+
+  await expect(page.getByRole('button', { name: 'Edit my trail (Guest)' })).toContainText('Me');
+  await expect(page.getByRole('button', { name: 'Add child profile' })).toContainText('Add child');
+  await expect(page.locator('#profile-panel-help')).toContainText('separate');
 });
 
 test("add form populates defaults", async ({ page }) => {
