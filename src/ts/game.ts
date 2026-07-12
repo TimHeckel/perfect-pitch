@@ -377,8 +377,8 @@ function renderLevel(): void {
         const profile = getCurrentProfile();
         const isFinalLevel = getNextChord(profile.current_chord) === null;
         trailDetail.textContent = isFinalLevel
-            ? 'Final route'
-            : `Day ${getLevelDay(profile.level_started_at, getCurrentTimestamp())} of ${LEVEL_WAIT_DAYS}`;
+            ? 'Final route · adaptive mix'
+            : `Day ${getLevelDay(profile.level_started_at, getCurrentTimestamp())} of ${LEVEL_WAIT_DAYS} · adaptive mix`;
     }
 }
 

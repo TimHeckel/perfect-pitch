@@ -54,3 +54,50 @@ test("a completed checkpoint rolls into the next trail automatically", async ({ 
   await expect(page.locator("#checkpoint-label")).toHaveText("Trail 2");
   await expect(page.locator("#stats-container")).not.toHaveClass(/done/);
 });
+
+test("a completed checkpoint saved across a reload recovers into a fresh trail", async ({ page }) => {
+  await page.addInitScript(() => {
+    const now = Date.now() / 1000;
+    localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
+    localStorage.setItem("bsharp_state", JSON.stringify({
+      profiles: {
+        100: {
+          id: 100,
+          name: "Guest",
+          icon: "fa-user",
+          target_number: 10,
+          current_chord: "yellow",
+          current_instrument: "piano_1",
+          chord_selection_mode: "adaptive",
+          stats: {
+            current_chord: "yellow",
+            start_time: now - 60,
+            updated_time: now,
+            correct: 9,
+            identifications: 10,
+            confusion_matrix: {
+              red: { red: 5 },
+              yellow: { yellow: 4, red: 1 },
+            },
+            notes: { correct: 0, identifications: 0, confusion_matrix: {} },
+            done: true,
+          },
+        },
+      },
+      current_chord: "yellow",
+      current_profile: 100,
+    }));
+  });
+
+  await page.goto("/");
+
+  await expect(page.locator("#stats-correct")).toHaveText("0");
+  await expect(page.locator("#stats-total")).toHaveText("10");
+  await expect(page.locator("#checkpoint-label")).toHaveText("Trail 1");
+  await expect(page.locator("#play-button")).toHaveClass(/ready-action/);
+  await expect.poll(() => page.evaluate(() => {
+    const history = JSON.parse(localStorage.getItem("bsharp_session_history")!);
+    return history["100"].yellow[0].correct;
+  })).toBe(9);
+});

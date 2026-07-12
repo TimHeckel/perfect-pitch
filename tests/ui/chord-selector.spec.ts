@@ -43,7 +43,7 @@ test("the internal route follows the fixed cumulative chord order", async ({ pag
 });
 
 test("route starts on day one of the fourteen-day gate", async ({ page }) => {
-  await expect(page.locator("#trail-level-detail")).toHaveText("Day 1 of 14");
+  await expect(page.locator("#trail-level-detail")).toHaveText("Day 1 of 14 · adaptive mix");
 });
 
 test("header offers exactly two persistent sound buttons", async ({ page, context }) => {

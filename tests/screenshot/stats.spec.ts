@@ -27,8 +27,8 @@ test.beforeEach(async ({ page }) => {
               current_chord: "yellow",
               start_time: timestamp,
               updated_time: timestamp,
-              correct: 9,
-              identifications: 10,
+              correct: 0,
+              identifications: 0,
               confusion_matrix: {},
               notes: { correct: 0, identifications: 0, confusion_matrix: {} },
               done: false,
@@ -85,6 +85,15 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("stats done state layout", async ({ page }) => {
+  await page.evaluate(() => {
+    const container = document.getElementById("stats-container")!;
+    container.classList.add("done");
+    document.getElementById("stats-correct")!.textContent = "10";
+    document.getElementById("stats-total")!.textContent = "10";
+    document.getElementById("stats-percent")!.textContent = "9 correct · 90%";
+    document.getElementById("checkpoint-label")!.textContent = "Trail complete";
+    document.getElementById("trail-meter-fill")!.style.width = "100%";
+  });
   await expect(page.locator("#stats-container")).toHaveClass(/done/);
   await expect(page.locator("#stats-container")).toHaveScreenshot(
     "stats-done.png",

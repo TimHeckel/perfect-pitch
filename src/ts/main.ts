@@ -1,4 +1,4 @@
-import { loadState, getCurrentProfile, isRecent, STATE } from './state';
+import { loadState, getCurrentProfile, getCurrentTargetNumber, isRecent, STATE } from './state';
 import {
     playAudio, playFirstAudio, selectFlagWrapper, nextAudio, resetStats, changeSelector,
     changeInstrumentSelector, onTrainerOpen, playChord, getEmojiLock, stopCurrentAudio,
@@ -180,7 +180,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     const profile = getCurrentProfile();
     const stats = profile.stats;
     if (stats !== undefined && stats.updated_time !== undefined) {
-        if (!isRecent(stats.updated_time)) {
+        const checkpointComplete = stats.done || stats.identifications >= getCurrentTargetNumber();
+        if (checkpointComplete || !isRecent(stats.updated_time)) {
             resetStats();
         }
     }
