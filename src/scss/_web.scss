@@ -734,6 +734,14 @@ div.selectors select.selector,
 #i-infobox { align-items: center; }
 #i-infobox > * { width: min(100%, 860px); }
 
+#trainer-infobox > .trainer-heading {
+  width: 100%;
+  margin: 0 0 clamp(10px, 1.8vh, 18px);
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: clamp(24px, 3vw, 38px);
+}
+
 .guide-video {
   margin: 8px 0 24px;
   flex: 0 0 auto;

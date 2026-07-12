@@ -14,20 +14,22 @@ test("guide embeds the local Pitch Trail intro without a YouTube link", async ({
   await expect(video).toHaveAttribute("controls", "");
   await expect(video.locator("source")).toHaveAttribute(
     "src",
-    "static/video/pitch-trail-intro.mp4",
+    "static/video/pitch-trail-intro.mp4?v=20260712-2",
   );
   await expect(video.locator("track[kind='captions']")).toHaveAttribute(
     "src",
-    "static/video/pitch-trail-intro.vtt",
+    "static/video/pitch-trail-intro.vtt?v=20260712-2",
   );
   await expect(page.locator("#i-infobox a[href*='youtu']")).toHaveCount(0);
   await expect(page.locator(".guide-video figcaption")).toContainText("22 seconds");
 
-  const response = await page.request.get("/static/video/pitch-trail-intro.mp4");
+  const response = await page.request.get("/static/video/pitch-trail-intro.mp4?v=20260712-2");
   expect(response.ok()).toBe(true);
   expect(response.headers()["content-type"]).toContain("video/mp4");
 
-  const captions = await page.request.get("/static/video/pitch-trail-intro.vtt");
+  const captions = await page.request.get("/static/video/pitch-trail-intro.vtt?v=20260712-2");
   expect(captions.ok()).toBe(true);
-  expect(await captions.text()).toContain("Tap any color to hear its sound.");
+  const captionText = await captions.text();
+  expect(captionText).toContain("Tap any color to hear its sound.");
+  expect(captionText.toLowerCase()).not.toContain("strum");
 });

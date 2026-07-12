@@ -41,6 +41,10 @@ test("answer clock caps at ten seconds", async ({ page }) => {
 });
 
 test("next button is deactivated until flag selected", async ({ page }) => {
+  await page.evaluate(() => {
+    (window as unknown as { __bsharp_test_deterministic_color: string }).__bsharp_test_deterministic_color = "red";
+    (window as unknown as { change_selector: (to: string) => void }).change_selector("yellow");
+  });
   const nextButton = page.locator("#next-chord");
   await expect(nextButton).toHaveClass(/deactivated/);
   await expect

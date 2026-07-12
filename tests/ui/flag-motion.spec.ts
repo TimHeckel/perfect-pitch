@@ -13,6 +13,9 @@ test("color blazes advertise pointer interaction and bounce on tap", async ({ pa
   await openMenu(page);
   await page.locator("#trainer-infobox-trigger").click();
 
+  await expect(page.locator("#trainer-instruction")).toHaveText(
+    "Tap any color to hear its sound.",
+  );
   const blaze = page.locator("#trainer-infobox .flag.trainer.red");
   await expect(blaze).toBeVisible();
   await expect(blaze).toHaveCSS("cursor", "pointer");
