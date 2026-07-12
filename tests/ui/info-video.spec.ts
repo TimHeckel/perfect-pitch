@@ -21,8 +21,13 @@ test("guide embeds the local Pitch Trail intro without a YouTube link", async ({
     "static/video/pitch-trail-intro.vtt",
   );
   await expect(page.locator("#i-infobox a[href*='youtu']")).toHaveCount(0);
+  await expect(page.locator(".guide-video figcaption")).toContainText("22 seconds");
 
   const response = await page.request.get("/static/video/pitch-trail-intro.mp4");
   expect(response.ok()).toBe(true);
   expect(response.headers()["content-type"]).toContain("video/mp4");
+
+  const captions = await page.request.get("/static/video/pitch-trail-intro.vtt");
+  expect(captions.ok()).toBe(true);
+  expect(await captions.text()).toContain("Tap any color to hear its sound.");
 });

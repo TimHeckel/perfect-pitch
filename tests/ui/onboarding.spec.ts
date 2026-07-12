@@ -4,6 +4,7 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.clear();
     localStorage.setItem("pitchtrail_info_seen_v1", "true");
+    (window as any).__bsharp_test_deterministic_color = "red";
   });
   await page.goto("/");
 });
@@ -25,10 +26,10 @@ test("play is the only pulsing button at the start", async ({ page }) => {
   )).toBe("action-ready");
 });
 
-test("next becomes the only pulsing button after an answer", async ({ page }) => {
+test("next becomes the only pulsing button after an incorrect answer", async ({ page }) => {
   await page.locator("#play-button").click();
   await page.waitForTimeout(1100);
-  await page.locator("#red-flag").click();
+  await page.locator("#yellow-flag").click();
   await expect(page.locator("#play-button")).not.toHaveClass(/ready-action/);
   await expect(page.locator("#next-chord")).toHaveClass(/ready-action/);
 });

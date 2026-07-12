@@ -18,11 +18,26 @@ test("refresh icon uses high-contrast black", async ({ page }) => {
   await expect(page.locator("#reset-button i")).toHaveCSS("color", "rgb(23, 33, 30)");
 });
 
-test("practice clock starts with the first sound and stays prominent", async ({ page }) => {
+test("answer clock resets per question and stops when the child answers", async ({ page }) => {
+  await page.evaluate(() => {
+    (window as unknown as { __bsharp_test_deterministic_color: string }).__bsharp_test_deterministic_color = "red";
+    (window as unknown as { change_selector: (to: string) => void }).change_selector("yellow");
+  });
   await expect(page.locator("#practice-elapsed")).toHaveText("0:00");
   await page.locator("#play-button").click();
   await expect(page.locator("#practice-elapsed")).toHaveText("0:01", { timeout: 2_500 });
+  await page.locator("#yellow-flag").click();
+  const stoppedAt = await page.locator("#practice-elapsed").textContent();
+  await page.waitForTimeout(1_100);
+  await expect(page.locator("#practice-elapsed")).toHaveText(stoppedAt!);
   await expect(page.locator(".practice-clock")).toBeVisible();
+});
+
+test("answer clock caps at ten seconds", async ({ page }) => {
+  await page.clock.install();
+  await page.locator("#play-button").click();
+  await page.clock.fastForward(11_000);
+  await expect(page.locator("#practice-elapsed")).toHaveText("0:10");
 });
 
 test("next button is deactivated until flag selected", async ({ page }) => {
@@ -39,7 +54,7 @@ test("next button is deactivated until flag selected", async ({ page }) => {
   // Click play to start audio, wait for audio to "play", then select a flag
   await page.locator("#play-button").click();
   await page.waitForTimeout(1700);
-  await page.locator("#red-flag").click();
+  await page.locator("#yellow-flag").click();
 
   await expect(nextButton).not.toHaveClass(/deactivated/);
   await expect
@@ -132,6 +147,21 @@ test("next button advances and resets flag feedback", async ({ page }) => {
   // Feedback classes should be removed from all flags
   await expect(redFlag).not.toHaveClass(/flag-correct/);
   await expect(redFlag).not.toHaveClass(/flag-incorrect/);
+});
+
+test("a correct answer advances automatically after a confirmation beat", async ({ page }) => {
+  await page.evaluate(() => {
+    (window as unknown as { __bsharp_test_deterministic_color: string }).__bsharp_test_deterministic_color = "red";
+    (window as unknown as { change_selector: (to: string) => void }).change_selector("yellow");
+  });
+  await page.locator("#play-button").click();
+  await page.waitForTimeout(1000);
+  const redFlag = page.locator("#red-flag .flag");
+  await page.locator("#red-flag").click();
+
+  await expect(redFlag).toHaveClass(/flag-correct/);
+  await expect(redFlag).not.toHaveClass(/flag-correct/, { timeout: 2_000 });
+  await expect(page.locator("#next-chord")).toHaveClass(/deactivated/);
 });
 
 test("reset clears stats to zero", async ({ page }) => {

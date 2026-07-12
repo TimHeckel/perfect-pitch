@@ -24,9 +24,11 @@ let _TRAINER_PRELOADED = false;
 let _PERSIST_REACTION_FACE_ENABLED = false;
 let _LESSON_PRELOAD_TIMER: number | null = null;
 let _AUTO_CONTINUE_TIMER: number | null = null;
-let _PRACTICE_STARTED_AT: number | null = null;
-let _PRACTICE_CLOCK_TIMER: number | null = null;
+let _AUTO_NEXT_TIMER: number | null = null;
+let _QUESTION_STARTED_AT: number | null = null;
+let _QUESTION_CLOCK_TIMER: number | null = null;
 let _TRAIL_NUMBER = 1;
+const QUESTION_TIME_LIMIT_SECONDS = 10;
 export function getTestDeterministicColor(): string | null {
     return (window as unknown as Record<string, unknown>).__bsharp_test_deterministic_color as string | null ?? null;
 }
@@ -66,10 +68,13 @@ function setAudioStatus(message: string, isError = false): void {
     status.classList.toggle('error', isError);
 }
 
-function renderPracticeClock(): void {
-    const elapsed = _PRACTICE_STARTED_AT === null
+function renderQuestionClock(): void {
+    const elapsed = _QUESTION_STARTED_AT === null
         ? 0
-        : Math.max(0, Math.floor((Date.now() - _PRACTICE_STARTED_AT) / 1000));
+        : Math.min(
+            QUESTION_TIME_LIMIT_SECONDS,
+            Math.max(0, Math.floor((Date.now() - _QUESTION_STARTED_AT) / 1000)),
+        );
     const minutes = Math.floor(elapsed / 60);
     const seconds = String(elapsed % 60).padStart(2, '0');
     const elapsedElem = document.getElementById('practice-elapsed');
@@ -77,21 +82,31 @@ function renderPracticeClock(): void {
 
     const checkpoint = document.getElementById('checkpoint-label');
     if (checkpoint && !getCurrentProfile().stats.done) checkpoint.textContent = `Trail ${_TRAIL_NUMBER}`;
+
+    if (elapsed >= QUESTION_TIME_LIMIT_SECONDS && _QUESTION_CLOCK_TIMER !== null) {
+        window.clearInterval(_QUESTION_CLOCK_TIMER);
+        _QUESTION_CLOCK_TIMER = null;
+    }
 }
 
-function startPracticeClock(): void {
-    if (_PRACTICE_STARTED_AT !== null) return;
-    _PRACTICE_STARTED_AT = Date.now();
-    renderPracticeClock();
-    _PRACTICE_CLOCK_TIMER = window.setInterval(renderPracticeClock, 1000);
+function startQuestionClock(): void {
+    if (_QUESTION_STARTED_AT !== null) return;
+    _QUESTION_STARTED_AT = Date.now();
+    renderQuestionClock();
+    _QUESTION_CLOCK_TIMER = window.setInterval(renderQuestionClock, 250);
 }
 
-function resetPracticeClock(): void {
-    _PRACTICE_STARTED_AT = null;
-    _TRAIL_NUMBER = 1;
-    if (_PRACTICE_CLOCK_TIMER !== null) window.clearInterval(_PRACTICE_CLOCK_TIMER);
-    _PRACTICE_CLOCK_TIMER = null;
-    renderPracticeClock();
+function stopQuestionClock(): void {
+    if (_QUESTION_CLOCK_TIMER !== null) window.clearInterval(_QUESTION_CLOCK_TIMER);
+    _QUESTION_CLOCK_TIMER = null;
+    renderQuestionClock();
+}
+
+function resetQuestionClock(): void {
+    if (_QUESTION_CLOCK_TIMER !== null) window.clearInterval(_QUESTION_CLOCK_TIMER);
+    _QUESTION_CLOCK_TIMER = null;
+    _QUESTION_STARTED_AT = null;
+    renderQuestionClock();
 }
 
 function cancelLessonPreload(): void {
@@ -148,6 +163,7 @@ export function selectNewColor(): void {
 }
 
 export function populateAudio(): void {
+    resetQuestionClock();
     selectNewColor();
     stopCurrentAudio();
 
@@ -166,7 +182,7 @@ export function populateAudio(): void {
     }
     _AUDIO_PLAYED = false;
     setAudioStatus('Ready to play');
-    renderPracticeClock();
+    renderQuestionClock();
 }
 
 export function playAudio(): void {
@@ -174,7 +190,7 @@ export function playAudio(): void {
     if (playButton && playButton.classList.contains('deactivated')) return;
     if (!_CURRENT_AUDIO) return;
 
-    startPracticeClock();
+    startQuestionClock();
     playButton?.classList.remove('ready-action');
     const [chord, duration] = _CURRENT_AUDIO;
     stopCurrentAudio();
@@ -211,6 +227,7 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     const chosenColor = wrapperElem.dataset.color;
     const elem = wrapperElem.querySelector(':scope > .flag') as HTMLElement | null;
     if (!chosenColor || !elem) return;
+    stopQuestionClock();
 
     const flagHolder = document.getElementById('flag-holder')!;
 
@@ -263,7 +280,13 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     const nextButton = document.getElementById('next-chord');
     if (nextButton) {
         nextButton.classList.toggle('deactivated', reachedTarget);
-        nextButton.classList.toggle('ready-action', !reachedTarget);
+        nextButton.classList.toggle('ready-action', !reachedTarget && !isCorrect);
+    }
+    if (isCorrect && !reachedTarget) {
+        _AUTO_NEXT_TIMER = window.setTimeout(() => {
+            _AUTO_NEXT_TIMER = null;
+            nextAudio();
+        }, 950);
     }
 }
 
@@ -274,6 +297,10 @@ export function playFirstAudio(): void {
 }
 
 export function nextAudio(): void {
+    if (_AUTO_NEXT_TIMER !== null) {
+        window.clearTimeout(_AUTO_NEXT_TIMER);
+        _AUTO_NEXT_TIMER = null;
+    }
     const nextButton = document.getElementById('next-chord');
     if (!nextButton || nextButton.classList.contains('deactivated')) return;
 
@@ -289,11 +316,16 @@ export function nextAudio(): void {
 }
 
 export function resetStats(done = true, continuePractice = false): void {
+    if (_AUTO_NEXT_TIMER !== null) {
+        window.clearTimeout(_AUTO_NEXT_TIMER);
+        _AUTO_NEXT_TIMER = null;
+    }
     if (_AUTO_CONTINUE_TIMER !== null) {
         window.clearTimeout(_AUTO_CONTINUE_TIMER);
         _AUTO_CONTINUE_TIMER = null;
     }
-    if (!continuePractice) resetPracticeClock();
+    resetQuestionClock();
+    if (!continuePractice) _TRAIL_NUMBER = 1;
     const profile = getCurrentProfile();
     profile.stats.done = done;
     if (!done || profile.stats.identifications > 0) {
