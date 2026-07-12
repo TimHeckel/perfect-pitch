@@ -16,7 +16,8 @@
     "test:ui": "make test-ui",
     "test:cloud": "playwright test --config tests/playwright.cloud.config.ts",
     "build:guitar-samples": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON sample-source/guitar/build-guitar-samples.ts --all",
-    "build:guitar-chords": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON sample-source/guitar/build-guitar-chords.ts"
+    "build:guitar-chords": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON sample-source/guitar/build-guitar-chords.ts",
+    "build:intro-video": "node scripts/video/render-intro.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.1",

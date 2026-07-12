@@ -14,13 +14,27 @@ test("play button is active after init", async ({ page }) => {
 test("next button is deactivated until flag selected", async ({ page }) => {
   const nextButton = page.locator("#next-chord");
   await expect(nextButton).toHaveClass(/deactivated/);
+  await expect
+    .poll(() =>
+      nextButton.evaluate((element) =>
+        getComputedStyle(element, "::after").animationName,
+      ),
+    )
+    .toBe("none");
 
   // Click play to start audio, wait for audio to "play", then select a flag
   await page.locator("#play-button").click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(1700);
   await page.locator("#red-flag").click();
 
   await expect(nextButton).not.toHaveClass(/deactivated/);
+  await expect
+    .poll(() =>
+      nextButton.evaluate((element) =>
+        getComputedStyle(element, "::after").animationName,
+      ),
+    )
+    .toBe("next-ready");
 });
 
 test("selecting a flag shows correct or incorrect feedback", async ({
@@ -71,13 +85,14 @@ test("wrong flag shows flag-incorrect and correct flag is revealed", async ({
 
 test("stats counter increments after answering", async ({ page }) => {
   await expect(page.locator("#stats-correct")).toHaveText("0");
-  await expect(page.locator("#stats-total")).toHaveText("0");
+  await expect(page.locator("#stats-total")).toHaveText("10");
 
   await page.locator("#play-button").click();
   await page.waitForTimeout(1000);
   await page.locator("#red-flag").click();
 
-  await expect(page.locator("#stats-total")).toHaveText("1");
+  await expect(page.locator("#stats-correct")).toHaveText("1");
+  await expect(page.locator("#stats-percent")).toContainText("correct");
 });
 
 test("next button advances and resets flag feedback", async ({ page }) => {
@@ -111,11 +126,11 @@ test("reset clears stats to zero", async ({ page }) => {
   await page.waitForTimeout(1000);
   await page.locator("#red-flag").click();
 
-  await expect(page.locator("#stats-total")).toHaveText("1");
+  await expect(page.locator("#stats-correct")).toHaveText("1");
 
   // Click reset
   await page.locator("#reset-button").click();
 
   await expect(page.locator("#stats-correct")).toHaveText("0");
-  await expect(page.locator("#stats-total")).toHaveText("0");
+  await expect(page.locator("#stats-total")).toHaveText("10");
 });

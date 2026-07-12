@@ -9,7 +9,7 @@ vi.stubGlobal('localStorage', {
     clear: () => { for (const k in store) delete store[k]; },
 });
 
-import { DEFAULT_INSTRUMENT, initializeProfileDefaults } from '../../src/ts/state';
+import { DEFAULT_INSTRUMENT, DEFAULT_TARGET_NUMBER, initializeProfileDefaults } from '../../src/ts/state';
 import type { Profile } from '../../src/ts/types';
 
 describe('initializeProfileDefaults', () => {
@@ -39,5 +39,24 @@ describe('initializeProfileDefaults', () => {
         } as unknown as Profile;
         initializeProfileDefaults(profile);
         expect(profile.current_instrument).toBe('guitar');
+    });
+
+    it('turns a legacy long session into a completed short trail without losing accuracy', () => {
+        const profile = {
+            name: 'Guest', icon: 'fa-user', id: 100,
+            target_number: 25,
+            stats: {
+                correct: 42,
+                identifications: 44,
+                done: false,
+            },
+        } as unknown as Profile;
+
+        initializeProfileDefaults(profile);
+
+        expect(profile.target_number).toBe(DEFAULT_TARGET_NUMBER);
+        expect(profile.stats.correct).toBe(42);
+        expect(profile.stats.identifications).toBe(44);
+        expect(profile.stats.done).toBe(true);
     });
 });

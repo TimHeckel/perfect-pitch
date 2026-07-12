@@ -37,8 +37,8 @@ test("add form populates defaults", async ({ page }) => {
   await openProfilePanel(page);
   await page.locator("#profile-switcher .switcher-add").click();
 
-  // Target number should have a non-empty default
-  await expect(page.locator("#target_number_setting")).not.toHaveValue("");
+  // New kid-sized sessions default to ten identifications.
+  await expect(page.locator("#target_number_setting")).toHaveValue("10");
 
   // Show chord name mode should have a default selected
   const showChordMode = page.locator("#show-chord-name-mode-selector");

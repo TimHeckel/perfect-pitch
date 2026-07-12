@@ -96,8 +96,17 @@
                 </a>
             </div>
             <div class="account-cluster">
+                <label class="header-sound-control" for="instrument-selector">
+                    <i class="fa fa-music" aria-hidden="true"></i>
+                    <span>Sound</span>
+                    <select name="instrument" id="instrument-selector" onchange="change_instrument_selector()">
+                        <option value="piano_1">Piano</option>
+                        <option value="guitar">Guitar</option>
+                        <option value="guitar-strummed">Strummed</option>
+                    </select>
+                </label>
                 <span id="sync-status">Guest mode</span>
-                <button id="account-button" class="account-button" type="button">Save progress</button>
+                <button id="account-button" class="account-button" type="button" aria-label="Save progress"><span class="account-long">Save progress</span><span class="account-short">Save</span></button>
             </div>
         </div>
         <section class="trail-heading" aria-labelledby="trail-heading-title">
@@ -106,9 +115,9 @@
                 <h1 id="trail-heading-title">Find the color you hear.</h1>
             </div>
             <div class="trail-context" aria-live="polite">
-                <span>Current route</span>
-                <strong id="trail-level-name">Yellow trail</strong>
-                <small id="trail-level-detail">2 colors in this lesson</small>
+                <span>Lesson route</span>
+                <strong id="trail-level-name">2-color trail</strong>
+                <small id="trail-level-detail">Lesson 1 · answers stay hidden</small>
             </div>
         </section>
         <div id="panel-area">
@@ -116,11 +125,28 @@
             <div class="infobox panel" id="i-infobox">
                 <p class="panel-kicker">Trail guide</p>
                 <h2>Small steps build musical memory.</h2>
-                <p>This is an implementation of <a href="https://www.ganbar.us/documents/sakakibara_2012_chord_identification.pdf">Eguchi's Chord Identification method</a>. See also <a href="https://ichionkai.co.jp/english3.html">Ichionkai Music School</a>.</p>
-                <p><a href="https://youtu.be/kNfkm6PQC20">Here is a short video explaining how we use it</a>.</p>
-                <p>The method is intended for children aged 2–6. Aim for five short sessions per day, about 2–3 minutes or 20–25 identifications each. Chords are always identified with colors and introduced one at a time.</p>
-                <p>Wait at least two weeks between new chords, and only advance after the child can identify every presented chord with 100% accuracy.</p>
-                <p class="attribution-note">Pitch Trail is adapted from the open-source BSharp trainer and CIM Trainer. It is educational practice software, not a medical or developmental guarantee.</p>
+                <figure class="guide-video">
+                    <video id="pitch-trail-intro"
+                           controls
+                           playsinline
+                           preload="metadata"
+                           poster="static/video/pitch-trail-intro-poster.png"
+                           aria-label="How to use Pitch Trail">
+                        <source src="static/video/pitch-trail-intro.mp4" type="video/mp4">
+                        <track kind="captions" src="static/video/pitch-trail-intro.vtt" srclang="en" label="English" default>
+                        Your browser does not support embedded video.
+                    </video>
+                    <figcaption><span>How to follow the listening trail</span><span>18 seconds</span></figcaption>
+                </figure>
+                <div class="guide-copy">
+                    <p>Pitch Trail follows <a href="https://www.ganbar.us/documents/sakakibara_2012_chord_identification.pdf">Eguchi's Chord Identification method</a>: listen, choose the matching color, and add new chords gradually. See also <a href="https://ichionkai.co.jp/english3.html">Ichionkai Music School</a>.</p>
+                    <ol class="guide-steps" aria-label="Practice rhythm">
+                        <li><strong>Keep it tiny.</strong><span>Practice for 2–3 minutes at a time.</span></li>
+                        <li><strong>Repeat often.</strong><span>Aim for a few short sessions through the day.</span></li>
+                        <li><strong>Move slowly.</strong><span>Add a chord only after every current color is secure.</span></li>
+                    </ol>
+                    <p class="attribution-note">Designed for children aged 2–6. Pitch Trail is adapted from the open-source BSharp trainer and CIM Trainer. It is educational practice software, not a medical or developmental guarantee.</p>
+                </div>
             </div>
 
             <!-- Music player / Trainer -->
@@ -206,8 +232,8 @@
                     <input type="checkbox" id="enable_onboarding_hints_setting" class="entry">
                 </div>
                 <div class="entry-row">
-                    <label for="target_number_setting">Target Number:</label>
-                    <input type="number" id="target_number_setting" class="entry">
+                    <label for="target_number_setting">Session length:</label>
+                    <input type="number" id="target_number_setting" class="entry" min="5" max="25" step="1">
                 </div>
                 <div class="entry-row">
                     <label for="color_scheme_setting">Color scheme:</label>
@@ -430,7 +456,7 @@
                 <span id="reaction-emoji"></span>
             </div>
             <div class="stats-wrapper">
-                <span class="checkpoint-label">Trail checkpoint</span>
+                <span class="checkpoint-label" id="checkpoint-label">Trail checkpoint</span>
                 <div class="stats-display chord-stats-display" id="chord-stats-display">
                     <div class="num-correct">
                         <span class="stats-correct" id="stats-correct">0</span><span class="stats-divider" id="stats-divider"> / </span><span class="stats-total" id="stats-total">0</span>
@@ -452,7 +478,7 @@
                     </div>
                 </div>
             </div>
-            <a id="reset-button" onclick="reset_stats()">
+            <a id="reset-button" onclick="reset_stats()" aria-label="Start a new trail" title="Start a new trail">
                 <i class="fa fa-refresh" aria-hidden="true"></i>
             </a>
         </div>
@@ -478,14 +504,6 @@
                 <option value="lightpurple">Level 4: Light Purple (B&#x266D; D F)</option>
                 <option value="skyblue">Level 5: Sky Blue (E&#x266D; G B&#x266D;)</option>
             </optgroup>
-            </select>
-            </label>
-            <label class="selector-field" for="instrument-selector">
-            <span>Trail sound</span>
-            <select class="selector" name="instrument" id="instrument-selector" onchange="change_instrument_selector()">
-                <option value="piano_1">Piano</option>
-                <option value="guitar">Guitar</option>
-                <option value="guitar-strummed">Guitar (Strummed)</option>
             </select>
             </label>
         </div>

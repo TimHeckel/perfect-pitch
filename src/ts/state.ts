@@ -13,7 +13,9 @@ export const SESSION_TIMEOUT_TIME_SECONDS = 60 * 30;
 
 const DEFAULT_CHORD = Object.keys(CHORDS_TONE)[1];
 export const DEFAULT_INSTRUMENT = 'piano_1';
-export const DEFAULT_TARGET_NUMBER = 25;
+export const DEFAULT_TARGET_NUMBER = 10;
+export const MIN_TARGET_NUMBER = 5;
+export const MAX_TARGET_NUMBER = 25;
 export const DEFAULT_SHOW_CHORD_MODE = 'black_only';
 export const DEFAULT_REVEAL_CHORD_MODE = 'always';
 export const DEFAULT_CHORD_DISPLAY_MODE = 'shapes_and_letters';
@@ -120,6 +122,18 @@ export function initializeProfileDefaults(profile: Profile): void {
         if ((profile as unknown as Record<string, unknown>)[key] === undefined) {
             (profile as unknown as Record<string, unknown>)[key] = defaultVal;
         }
+    }
+
+    const target = Number(profile.target_number);
+    const isLegacyDefault = target === 25;
+    const isOutOfRange = !Number.isInteger(target)
+        || target < MIN_TARGET_NUMBER
+        || target > MAX_TARGET_NUMBER;
+    if (isLegacyDefault || isOutOfRange) {
+        profile.target_number = DEFAULT_TARGET_NUMBER;
+    }
+    if (profile.stats && profile.stats.identifications >= profile.target_number) {
+        profile.stats.done = true;
     }
 }
 

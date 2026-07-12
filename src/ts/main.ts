@@ -142,6 +142,30 @@ export function installFlagPointerHandling(): void {
     holder.addEventListener('lostpointercapture', clearPointer);
 }
 
+export function installFlagBounce(): void {
+    document.addEventListener('pointerdown', (event) => {
+        if (!event.isPrimary) return;
+        const target = event.target as Element | null;
+        const flag = target?.closest<HTMLElement>('.flag');
+        if (!flag) return;
+
+        const isPracticeFlag = Boolean(flag.closest('#flag-holder .flag-wrapper.visible'));
+        const isTrainerFlag = flag.classList.contains('trainer');
+        if (!isPracticeFlag && !isTrainerFlag) return;
+
+        flag.classList.remove('flag-bounce');
+        void flag.offsetWidth;
+        flag.classList.add('flag-bounce');
+    });
+
+    document.addEventListener('animationend', (event) => {
+        const target = event.target;
+        if (target instanceof HTMLElement && event.animationName === 'flag-bounce') {
+            target.classList.remove('flag-bounce');
+        }
+    });
+}
+
 // Stop any playing audio when the user clicks an interactive element.
 document.addEventListener('click', (e) => {
     const target = e.target as Element;
@@ -168,6 +192,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     applyColorScheme(profile.color_scheme);
     changeInstrumentSelector(profile.current_instrument);
     changeSelector(profile.current_chord);
+    installFlagBounce();
     installFlagPointerHandling();
     initOnboarding();
     updateStatsDisplay();

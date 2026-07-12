@@ -1,4 +1,4 @@
-import { CHORDS_TONE, CHORD_DEFINITIONS, FIRST_BLACK_INDEX } from './data';
+import { CHORDS_TONE, FIRST_BLACK_INDEX } from './data';
 import { AudioFileInfo } from './types';
 import { randomElem, getCurrentTimestamp } from './utils';
 import {
@@ -106,6 +106,7 @@ export function selectNewColor(): void {
     if (_SELECTED_ELEM !== null) {
         _SELECTED_ELEM.classList.remove('flag-correct');
         _SELECTED_ELEM.classList.remove('flag-incorrect');
+        _SELECTED_ELEM.classList.remove('flag-selected');
         _SELECTED_ELEM = null;
     }
     if (_CORRECT_ELEM !== null) {
@@ -162,6 +163,7 @@ export function playAudio(): void {
 export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     if (_SELECTED_ELEM !== null) return;
     if (!_AUDIO_PLAYED) return;
+    if (getCurrentProfile().stats.identifications >= getCurrentTargetNumber()) return;
 
     const chosenColor = wrapperElem.dataset.color;
     const elem = wrapperElem.querySelector(':scope > .flag') as HTMLElement | null;
@@ -173,8 +175,10 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     updateStartTimeIfNeeded();
     updateStats(_CORRECT_COLOR!, chosenColor);
     updateStatsDisplay();
+    const reachedTarget = getCurrentProfile().stats.identifications >= getCurrentTargetNumber();
 
     const isCorrect = chosenColor === _CORRECT_COLOR;
+    elem.classList.add('flag-selected');
     if (isCorrect) {
         elem.classList.add('flag-correct');
         setCatEmoji(6);
@@ -185,7 +189,15 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
         setCatEmoji(5);
     }
     _SELECTED_ELEM = elem;
-    showOnboardingGoNextPrompt(isCorrect);
+    if (reachedTarget) {
+        dismissOnboardingStep('guess');
+        getCurrentProfile().stats.done = true;
+        saveSessionHistory();
+        saveState();
+        setAudioStatus('Trail complete — tap reset to start a new one');
+    } else {
+        showOnboardingGoNextPrompt(isCorrect);
+    }
 
     if (getCurrentProfile().persist_reaction_face &&
         getCurrentProfile().stats.identifications < getCurrentTargetNumber()) {
@@ -203,7 +215,9 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
 
     // Single note trainer disabled for now
     const nextButton = document.getElementById('next-chord');
-    if (nextButton) nextButton.classList.remove('deactivated');
+    if (nextButton) {
+        nextButton.classList.toggle('deactivated', reachedTarget);
+    }
 }
 
 export function nextAudio(): void {
@@ -274,14 +288,14 @@ export function changeSelector(to?: string): void {
         || (isBlackLevel() && currentProfile.show_chord_mode === 'black_only'));
 
     populateFlags(getSelectedColors, chordsOn);
-    const chordDefinition = CHORD_DEFINITIONS.find((chord) => chord.name === currentProfile.current_chord);
     const trailName = document.getElementById('trail-level-name');
     const trailDetail = document.getElementById('trail-level-detail');
-    if (trailName && chordDefinition) {
-        trailName.textContent = `${chordDefinition.display} trail`;
+    const colorCount = getSelectedColors().length;
+    if (trailName) {
+        trailName.textContent = `${colorCount}-color trail`;
     }
     if (trailDetail) {
-        trailDetail.textContent = `${getSelectedColors().length} colors in this lesson`;
+        trailDetail.textContent = `Lesson ${Math.max(1, chordSelector.selectedIndex)} · answers stay hidden`;
     }
     populateAudio();
     showOnboardingPlayPrompt();

@@ -21,6 +21,17 @@ test("default level shows red and yellow flags", async ({ page }) => {
   await expect(blueFlag).not.toBeVisible();
 });
 
+test("lesson route reports difficulty without revealing the answer color", async ({
+  page,
+}) => {
+  await expect(page.locator("#trail-level-name")).toHaveText("2-color trail");
+  await expect(page.locator("#trail-level-name")).not.toContainText("Yellow");
+
+  await page.locator("#chord-selector").selectOption("blue");
+  await expect(page.locator("#trail-level-name")).toHaveText("3-color trail");
+  await expect(page.locator("#trail-level-name")).not.toContainText("Blue");
+});
+
 test("selecting blue shows red, yellow, blue", async ({ page }) => {
   const selector = page.locator("#chord-selector");
   await selector.selectOption("blue");
@@ -78,7 +89,7 @@ test("red option is hidden by default", async ({ page }) => {
   await expect(redOption).toHaveAttribute("hidden", "");
 });
 
-test("instrument selector appears next to level selector with available instruments", async ({
+test("instrument selector stays in the global header with available instruments", async ({
   page,
 }) => {
   await expect(
@@ -87,9 +98,7 @@ test("instrument selector appears next to level selector with available instrume
     ),
   ).toBeVisible();
   await expect(
-    page.locator(
-      ".selectors > .selector-field:last-child #instrument-selector",
-    ),
+    page.locator(".header-sound-control #instrument-selector"),
   ).toBeVisible();
 
   const selector = page.locator("#instrument-selector");
@@ -97,7 +106,7 @@ test("instrument selector appears next to level selector with available instrume
   await expect(selector.locator("option")).toHaveText([
     "Piano",
     "Guitar",
-    "Guitar (Strummed)",
+    "Strummed",
   ]);
 });
 

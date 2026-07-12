@@ -7,6 +7,7 @@ import {
     DEFAULT_SINGLE_NOTE_MODE, DEFAULT_SINGLE_NOTE_CORRECTNESS_MODE,
     DEFAULT_PERSIST_REACTION_FACE, DEFAULT_ENABLE_ONBOARDING_HINTS, DEFAULT_COLOR_SCHEME,
     DEFAULT_CHORD_SELECTION_MODE, DEFAULT_INSTRUMENT,
+    MIN_TARGET_NUMBER, MAX_TARGET_NUMBER,
 } from './state';
 import {
     calculatePercentage, calculateNeutralLevel, getCatEmoji, normalizeStatsObject
@@ -85,7 +86,17 @@ export function updateStatsDisplay(): void {
     const target = getCurrentTargetNumber();
     const statsDisplayElem = document.getElementById('chord-stats-display');
     if (statsDisplayElem) {
-        updateStatsContainer(statsDisplayElem, correct, identifications);
+        const progressElem = statsDisplayElem.querySelector('.stats-correct');
+        const targetElem = statsDisplayElem.querySelector('.stats-total');
+        const accuracyElem = statsDisplayElem.querySelector('.stats-percent');
+        if (progressElem) progressElem.textContent = String(Math.min(identifications, target));
+        if (targetElem) targetElem.textContent = String(target);
+        if (accuracyElem) {
+            const percentage = calculatePercentage(correct, identifications);
+            accuracyElem.textContent = identifications > 0
+                ? `${correct} correct · ${percentage.toFixed(0)}%`
+                : 'Ready for a short trail';
+        }
     }
 
     const meter = document.getElementById('trail-meter');
@@ -102,6 +113,14 @@ export function updateStatsDisplay(): void {
         containerElem.classList.add('done');
     } else {
         containerElem.classList.remove('done');
+    }
+
+    const playButton = document.getElementById('play-button');
+    playButton?.classList.toggle('deactivated', identifications >= target);
+
+    const checkpointLabel = document.getElementById('checkpoint-label');
+    if (checkpointLabel) {
+        checkpointLabel.textContent = identifications >= target ? 'Trail complete' : 'Trail checkpoint';
     }
 
     if (correct === identifications) {
@@ -401,6 +420,12 @@ function isProfileNameTaken(profileName: string): boolean {
     return false;
 }
 
+function validTargetNumber(value: string): boolean {
+    if (!validInt(value)) return false;
+    const target = parseInt(value);
+    return target >= MIN_TARGET_NUMBER && target <= MAX_TARGET_NUMBER;
+}
+
 function getProfileSettings(): {
     name: string; icon: string | null; id: number | null;
     target_number: string; show_chord_mode: string; reveal_chord_mode: string;
@@ -587,14 +612,14 @@ export function closeProfileAdder(): void {
 export function addProfile(): void {
     const newProfileValues = getProfileSettings();
     const nameTaken = isProfileNameTaken(newProfileValues.name);
-    const targetNumValid = validInt(newProfileValues.target_number);
+    const targetNumValid = validTargetNumber(newProfileValues.target_number);
 
     if (newProfileValues.icon === null || newProfileValues.name === '') {
         alert('Must specify a profile name and icon.');
     } else if (nameTaken) {
         alert('A profile with the name ' + newProfileValues.name + ' already exists.');
     } else if (!targetNumValid) {
-        alert('Target number must be a valid integer, got ' + newProfileValues.target_number);
+        alert(`Session length must be between ${MIN_TARGET_NUMBER} and ${MAX_TARGET_NUMBER}.`);
     } else {
         const profile = newProfile(
             newProfileValues.name,
@@ -630,8 +655,8 @@ export function submitProfileChanges(): void {
         alert('Must specify an icon!');
         return;
     }
-    if (!validInt(profileValues.target_number)) {
-        alert('Must specify a valid target number, got: ' + profileValues.target_number);
+    if (!validTargetNumber(profileValues.target_number)) {
+        alert(`Session length must be between ${MIN_TARGET_NUMBER} and ${MAX_TARGET_NUMBER}.`);
         return;
     }
 

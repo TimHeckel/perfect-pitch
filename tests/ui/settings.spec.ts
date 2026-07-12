@@ -131,7 +131,7 @@ test("switching profiles applies that profile instrument", async ({ page }) => {
   await expect(page.locator("#instrument-selector")).toHaveValue("guitar");
 });
 
-test("target number persists after save", async ({ page }) => {
+test("short session length persists after save", async ({ page }) => {
   page.on("dialog", (dialog) => dialog.dismiss());
 
   await openProfilePanel(page);
@@ -140,12 +140,12 @@ test("target number persists after save", async ({ page }) => {
   await page
     .locator("input[name='profile_icon_selector'][value='fa-bolt']")
     .check();
-  await page.locator("#target_number_setting").fill("42");
+  await page.locator("#target_number_setting").fill("15");
   await page.locator("#add-user-button").click();
 
   // Re-open the profile panel and verify target number
   await openProfilePanel(page);
-  await expect(page.locator("#target_number_setting")).toHaveValue("42");
+  await expect(page.locator("#target_number_setting")).toHaveValue("15");
 });
 
 test("color scheme setting saved to profile", async ({ page }) => {

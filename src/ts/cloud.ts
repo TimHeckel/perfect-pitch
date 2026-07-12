@@ -195,7 +195,18 @@ function setAccountUi(user: User | null, status?: string): void {
     const signedIn = document.getElementById('account-signed-in');
     const email = document.getElementById('account-email');
     const sync = document.getElementById('sync-status');
-    if (accountButton) accountButton.textContent = user ? 'Family' : 'Save progress';
+    if (accountButton) {
+        const longLabel = accountButton.querySelector('.account-long');
+        const shortLabel = accountButton.querySelector('.account-short');
+        const accessibleLabel = user ? 'Family' : 'Save progress';
+        if (longLabel && shortLabel) {
+            longLabel.textContent = accessibleLabel;
+            shortLabel.textContent = user ? 'Family' : 'Save';
+        } else {
+            accountButton.textContent = accessibleLabel;
+        }
+        accountButton.setAttribute('aria-label', accessibleLabel);
+    }
     signedOut?.classList.toggle('hidden', Boolean(user));
     signedIn?.classList.toggle('hidden', !user);
     if (email) email.textContent = user?.email ?? '';

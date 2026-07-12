@@ -15,6 +15,7 @@ for (const viewport of tabletViewports) {
     await expect(page.locator("#play-button")).toBeVisible();
     await expect(page.locator("#chord-selector")).toBeVisible();
     await expect(page.locator("#instrument-selector")).toBeVisible();
+    await expect(page.locator(".header-sound-control #instrument-selector")).toBeVisible();
 
     const layout = await page.evaluate(() => {
       const rect = (selector: string) => {
