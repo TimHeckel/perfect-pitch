@@ -175,6 +175,13 @@ async function pullOrSeedCloud(): Promise<void> {
     const response = await fetch('/api/sync', { headers: { Accept: 'application/json' } });
     if (!response.ok) return;
     const remote = await response.json() as SyncResponse;
+    // A profile may be added while the first cloud read is in flight. In that
+    // case the fresh local edit is authoritative; never replace it with the
+    // slightly older response that just arrived.
+    if (syncTimer !== null || syncInFlight) {
+        await flushSync();
+        return;
+    }
     const hasRemoteProfiles = Object.keys(remote.state.profiles).length > 0;
     const local = exportCloudData();
     const localOwner = Object.values(local.state.profiles).find((profile) => profile.role === 'owner');
