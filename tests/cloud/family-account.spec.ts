@@ -2,7 +2,10 @@ import { test, expect } from '@playwright/test';
 import { createProfile } from '../ui/helpers';
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
+  });
   await page.goto('/');
 });
 
@@ -40,4 +43,26 @@ test('sign in mode does not require the adult confirmation checkbox', async ({ p
   await expect(confirmation).toBeHidden();
   await expect(confirmation).not.toHaveAttribute('required', '');
   await expect(page.getByRole('button', { name: 'Sign in', exact: true }).last()).toBeVisible();
+});
+
+test('Google sign-in starts a state- and PKCE-protected web flow', async ({ page }) => {
+  const status = await page.request.get('/api/auth/google/status');
+  expect(status.ok()).toBe(true);
+  expect(await status.json()).toEqual({ configured: true });
+
+  await page.getByRole('button', { name: 'Save progress' }).click();
+  await page.getByRole('checkbox').check();
+  await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible();
+
+  const response = await page.request.get('/api/auth/google/start?intent=signup&adult=1', {
+    maxRedirects: 0,
+  });
+  expect(response.status()).toBe(302);
+  const location = new URL(response.headers()['location']);
+  expect(location.origin).toBe('https://accounts.google.com');
+  expect(location.searchParams.get('client_id')).toBe('test-client');
+  expect(location.searchParams.get('redirect_uri')).toBe('http://localhost:8788/api/auth/google/callback');
+  expect(location.searchParams.get('state')).toBeTruthy();
+  expect(location.searchParams.get('code_challenge')).toBeTruthy();
+  expect(location.searchParams.get('code_challenge_method')).toBe('S256');
 });

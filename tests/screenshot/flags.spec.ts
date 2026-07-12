@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
     (window as any).__bsharp_test_deterministic_color = "red";
   });
   await page.goto("/");
@@ -153,6 +154,7 @@ test("tablet layout at high level - no menu overlap", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 1200 });
   await page.addInitScript((stateJson: string) => {
     localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
     localStorage.setItem("bsharp_state", stateJson);
     localStorage.setItem(
       "bsharp_session_history",
@@ -168,6 +170,7 @@ test("tablet layout at high level - no menu overlap", async ({ page }) => {
 test("mobile layout at high level", async ({ page }) => {
   await page.addInitScript((stateJson: string) => {
     localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
     localStorage.setItem("bsharp_state", stateJson);
     localStorage.setItem(
       "bsharp_session_history",
@@ -184,6 +187,7 @@ test("tablet layout at low level", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 1200 });
   await page.addInitScript((stateJson: string) => {
     localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
     localStorage.setItem("bsharp_state", stateJson);
     localStorage.setItem(
       "bsharp_session_history",

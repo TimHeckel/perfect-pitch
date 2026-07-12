@@ -1,169 +1,71 @@
 import { test, expect } from "@playwright/test";
-import { openMenu, openProfilePanel, createProfile } from "./helpers";
+import { openProfilePanel } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
+  });
   await page.goto("/");
 });
 
-test("non-default settings saved to new profile", async ({ page }) => {
-  page.on("dialog", (dialog) => dialog.dismiss());
-
-  // Open profile panel and click "+"
+test("profile settings expose only identity, trail length, and appearance", async ({ page }) => {
   await openProfilePanel(page);
-  await page.locator("#profile-switcher .switcher-add").click();
 
-  // Fill required fields + set a non-default setting
-  await page.locator("#profile_name_setting").fill("Custom User");
-  await page
-    .locator("input[name='profile_icon_selector'][value='fa-bolt']")
-    .check();
-  await page.locator("#persist_reaction_face_setting").uncheck();
-
-  await page.locator("#add-user-button").click();
-
-  // Re-open the profile panel and check the checkbox is still unchecked
-  const menu = page.locator("#menu-container");
-  if (!(await menu.evaluate((el) => el.classList.contains("visible")))) {
-    await page.locator("#hamburger-link").click();
-    await expect(menu).toHaveClass(/visible/);
-  }
-  await page.locator("#profile-infobox-trigger").click();
-  await expect(page.locator("#persist_reaction_face_setting")).not.toBeChecked();
+  await expect(page.locator("#profile_name_setting")).toBeVisible();
+  await expect(page.locator(".profile-icon-picker")).toBeVisible();
+  await expect(page.locator(".trail-length-presets")).toBeVisible();
+  await expect(page.locator("#color-scheme-selector")).toBeVisible();
+  await expect(page.locator("#show-chord-name-mode-selector")).toHaveCount(0);
+  await expect(page.locator("#chord-selection-mode-selector")).toHaveCount(0);
+  await expect(page.getByText("Pin screen:", { exact: true })).toHaveCount(0);
 });
 
-test("chord display mode shapes_only hides letters", async ({ page }) => {
+test("question-count presets persist on a child profile", async ({ page }) => {
   page.on("dialog", (dialog) => dialog.dismiss());
-
   await openProfilePanel(page);
   await page.locator("#profile-switcher .switcher-add").click();
-  await page.locator("#profile_name_setting").fill("Shapes Only");
-  await page
-    .locator("input[name='profile_icon_selector'][value='fa-bolt']")
-    .check();
-  await page
-    .locator("#chord-name-display-mode-selector")
-    .selectOption("shapes_only");
+  await page.locator("#profile_name_setting").fill("Long Trail");
+  await page.locator("label[for='npis-bolt']").click();
+  await page.locator("label[for='trail-length-15']").click();
   await page.locator("#add-user-button").click();
 
-  const flagHolder = page.locator("#flag-holder");
-  await expect(flagHolder).toHaveClass(/use-shapes/);
-  await expect(flagHolder).not.toHaveClass(/use-letters/);
+  await openProfilePanel(page);
+  await expect(page.locator("input[name='target_number_setting']:checked")).toHaveValue("15");
 });
 
-test("chord display mode letters_only hides shapes", async ({ page }) => {
-  page.on("dialog", (dialog) => dialog.dismiss());
-
-  await openProfilePanel(page);
-  await page.locator("#profile-switcher .switcher-add").click();
-  await page.locator("#profile_name_setting").fill("Letters Only");
-  await page
-    .locator("input[name='profile_icon_selector'][value='fa-bolt']")
-    .check();
-  await page
-    .locator("#chord-name-display-mode-selector")
-    .selectOption("letters_only");
-  await page.locator("#add-user-button").click();
-
-  const flagHolder = page.locator("#flag-holder");
-  await expect(flagHolder).toHaveClass(/use-letters/);
-  await expect(flagHolder).not.toHaveClass(/use-shapes/);
+test("new and existing profiles use adaptive chord selection", async ({ page }) => {
+  await expect.poll(() => page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("bsharp_state")!);
+    return state.profiles[state.current_profile].chord_selection_mode;
+  })).toBe("adaptive");
 });
 
-test("switching profiles applies that profile chord level", async ({
-  page,
-}) => {
+test("switching profiles preserves the earned route and instrument", async ({ page }) => {
   page.on("dialog", (dialog) => dialog.dismiss());
-
-  // Create a profile with blue level
   await openProfilePanel(page);
   await page.locator("#profile-switcher .switcher-add").click();
-  await page.locator("#profile_name_setting").fill("Blue Level User");
-  await page
-    .locator("input[name='profile_icon_selector'][value='fa-paw']")
-    .check();
+  await page.locator("#profile_name_setting").fill("Blue Guitar");
+  await page.locator("label[for='npis-paw']").click();
   await page.locator("#add-user-button").click();
-
-  // Simulate an automatically earned blue level for the new profile.
   await page.evaluate(() => {
     (window as unknown as { change_selector: (to: string) => void }).change_selector("blue");
   });
-
-  // Switch back to Guest (Guest uses fa-user icon)
-  await openProfilePanel(page);
-  await page
-    .locator("#profile-switcher .switcher-profile:has(.fa-user)")
-    .click();
-
-  // Guest should have default level (yellow)
-  await expect(page.locator("#trail-level-name")).toHaveText("2-color trail");
-
-  // Switch back to Blue Level User (uses fa-paw icon)
-  await page
-    .locator("#profile-switcher .switcher-profile:has(.fa-paw)")
-    .click();
-
-  await expect(page.locator("#trail-level-name")).toHaveText("3-color trail");
-});
-
-test("switching profiles applies that profile instrument", async ({ page }) => {
-  page.on("dialog", (dialog) => dialog.dismiss());
-
-  await openProfilePanel(page);
-  await page.locator("#profile-switcher .switcher-add").click();
-  await page.locator("#profile_name_setting").fill("Guitar User");
-  await page
-    .locator("input[name='profile_icon_selector'][value='fa-trophy']")
-    .check();
-  await page.locator("#add-user-button").click();
-
   await page.locator("#sound-guitar").click();
 
   await openProfilePanel(page);
-  await page
-    .locator("#profile-switcher .switcher-profile:has(.fa-user)")
-    .click();
-
+  await page.locator("#profile-switcher .switcher-profile:has(.fa-user)").click();
+  await expect(page.locator("#trail-level-name")).toHaveText("2-color trail");
   await expect(page.locator("#sound-piano")).toHaveAttribute("aria-pressed", "true");
 
-  await page
-    .locator("#profile-switcher .switcher-profile:has(.fa-trophy)")
-    .click();
-
+  await page.locator("#profile-switcher .switcher-profile:has(.fa-paw)").click();
+  await expect(page.locator("#trail-level-name")).toHaveText("3-color trail");
   await expect(page.locator("#sound-guitar")).toHaveAttribute("aria-pressed", "true");
 });
 
-test("short session length persists after save", async ({ page }) => {
-  page.on("dialog", (dialog) => dialog.dismiss());
-
+test("color scheme remains a simple profile choice", async ({ page }) => {
   await openProfilePanel(page);
-  await page.locator("#profile-switcher .switcher-add").click();
-  await page.locator("#profile_name_setting").fill("Target Test");
-  await page
-    .locator("input[name='profile_icon_selector'][value='fa-bolt']")
-    .check();
-  await page.locator("#target_number_setting").fill("15");
-  await page.locator("#add-user-button").click();
-
-  // Re-open the profile panel and verify target number
-  await openProfilePanel(page);
-  await expect(page.locator("#target_number_setting")).toHaveValue("15");
-});
-
-test("color scheme setting saved to profile", async ({ page }) => {
-  page.on("dialog", (dialog) => dialog.dismiss());
-
-  // Create a profile with light mode
-  await openProfilePanel(page);
-  await page.locator("#profile-switcher .switcher-add").click();
-  await page.locator("#profile_name_setting").fill("Light Theme User");
-  await page
-    .locator("input[name='profile_icon_selector'][value='fa-bolt']")
-    .check();
-  await page.locator("#color-scheme-selector").selectOption("light");
-  await page.locator("#add-user-button").click();
-
-  // Re-open profile panel and verify select shows "light"
-  await openProfilePanel(page);
-  await expect(page.locator("#color-scheme-selector")).toHaveValue("light");
+  await page.locator("#color-scheme-selector").selectOption("dark");
+  await page.locator("#submit-changes-button").click();
+  await expect(page.locator("body")).toHaveClass(/colorscheme-dark/);
 });

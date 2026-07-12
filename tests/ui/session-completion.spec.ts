@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-test("session stops at ten and points to a fresh trail", async ({ page }) => {
+test("a completed checkpoint rolls into the next trail automatically", async ({ page }) => {
   await page.addInitScript(() => {
     const now = Date.now() / 1000;
     localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
     localStorage.setItem(
       "bsharp_state",
       JSON.stringify({
@@ -47,12 +48,9 @@ test("session stops at ten and points to a fresh trail", async ({ page }) => {
   await expect(page.locator("#stats-total")).toHaveText("10");
   await expect(page.locator("#checkpoint-label")).toHaveText("Trail complete");
   await expect(page.locator("#play-button")).toHaveClass(/deactivated/);
-  await expect(page.locator("#next-chord")).toHaveClass(/deactivated/);
-  await expect
-    .poll(() =>
-      page.locator("#reset-button").evaluate((element) =>
-        getComputedStyle(element).animationName,
-      ),
-    )
-    .toBe("reset-ready");
+
+  await expect(page.locator("#stats-correct")).toHaveText("0", { timeout: 3_000 });
+  await expect(page.locator("#stats-total")).toHaveText("10");
+  await expect(page.locator("#checkpoint-label")).toHaveText("Trail 2");
+  await expect(page.locator("#stats-container")).not.toHaveClass(/done/);
 });

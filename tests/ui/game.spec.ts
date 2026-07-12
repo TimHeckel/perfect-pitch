@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
+  });
   await page.goto("/");
 });
 
@@ -9,6 +12,17 @@ test("play button is active after init", async ({ page }) => {
   const playButton = page.locator("#play-button");
   await expect(playButton).toBeVisible();
   await expect(playButton).not.toHaveClass(/deactivated/);
+});
+
+test("refresh icon uses high-contrast black", async ({ page }) => {
+  await expect(page.locator("#reset-button i")).toHaveCSS("color", "rgb(23, 33, 30)");
+});
+
+test("practice clock starts with the first sound and stays prominent", async ({ page }) => {
+  await expect(page.locator("#practice-elapsed")).toHaveText("0:00");
+  await page.locator("#play-button").click();
+  await expect(page.locator("#practice-elapsed")).toHaveText("0:01", { timeout: 2_500 });
+  await expect(page.locator(".practice-clock")).toBeVisible();
 });
 
 test("next button is deactivated until flag selected", async ({ page }) => {

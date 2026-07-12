@@ -12,7 +12,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium' }],
   webServer: {
-    command: 'npm run build && npm run db:migrate:local && wrangler dev --local --port 8788',
+    command: 'npm run build && npm run db:migrate:local && wrangler dev --local --port 8788 --var GOOGLE_CLIENT_ID:test-client --var GOOGLE_CLIENT_SECRET:test-secret',
     url: 'http://localhost:8788/api/health',
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

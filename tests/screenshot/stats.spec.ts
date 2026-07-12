@@ -7,6 +7,7 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(
     (timestamp) => {
       localStorage.clear();
+      localStorage.setItem("pitchtrail_info_seen_v1", "true");
       const state = {
         profiles: {
           100: {

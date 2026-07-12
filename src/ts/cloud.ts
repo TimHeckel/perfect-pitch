@@ -51,6 +51,7 @@ function installAccountUi(): void {
     const authTabs = document.querySelectorAll<HTMLButtonElement>('[data-auth-mode]');
     const form = document.getElementById('account-form') as HTMLFormElement | null;
     const logout = document.getElementById('account-logout');
+    const googleButton = document.getElementById('google-auth-button');
 
     accountButton?.addEventListener('click', () => dialog?.showModal());
     closeButton?.addEventListener('click', () => dialog?.close());
@@ -62,6 +63,15 @@ function installAccountUi(): void {
     }
     form?.addEventListener('submit', submitAuthForm);
     logout?.addEventListener('click', logoutAccount);
+    googleButton?.addEventListener('click', startGoogleAuth);
+    void configureGoogleAuth();
+
+    const authError = new URLSearchParams(window.location.search).get('authError');
+    if (authError) {
+        dialog?.showModal();
+        showAuthError(authError);
+        window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+    }
 }
 
 function setAuthMode(mode: 'signup' | 'login'): void {
@@ -70,15 +80,46 @@ function setAuthMode(mode: 'signup' | 'login'): void {
     const adultCheckbox = document.querySelector<HTMLInputElement>('#adult-confirmation input');
     const password = document.getElementById('account-password-input') as HTMLInputElement | null;
     const submit = document.getElementById('account-submit');
+    const title = document.getElementById('account-dialog-title');
     form.dataset.mode = mode;
     adultRow?.classList.toggle('hidden', mode !== 'signup');
     if (adultCheckbox) adultCheckbox.required = mode === 'signup';
     if (password) password.autocomplete = mode === 'signup' ? 'new-password' : 'current-password';
     if (submit) submit.textContent = mode === 'signup' ? 'Create family account' : 'Sign in';
+    if (title) title.textContent = mode === 'signup' ? 'Sign Up To Save Progress' : 'Sign In To Save Progress';
     for (const tab of document.querySelectorAll<HTMLButtonElement>('[data-auth-mode]')) {
         tab.classList.toggle('active', tab.dataset.authMode === mode);
     }
     showAuthError('');
+}
+
+async function configureGoogleAuth(): Promise<void> {
+    const button = document.getElementById('google-auth-button');
+    const divider = document.getElementById('auth-divider');
+    try {
+        const response = await fetch('/api/auth/google/status', { headers: { Accept: 'application/json' } });
+        const result = await response.json() as { configured?: boolean };
+        const configured = response.ok && result.configured === true;
+        button?.classList.toggle('hidden', !configured);
+        divider?.classList.toggle('hidden', !configured);
+    } catch {
+        button?.classList.add('hidden');
+        divider?.classList.add('hidden');
+    }
+}
+
+function startGoogleAuth(): void {
+    const form = document.getElementById('account-form') as HTMLFormElement;
+    const mode = form.dataset.mode === 'login' ? 'login' : 'signup';
+    if (mode === 'signup') {
+        const adultCheckbox = document.querySelector<HTMLInputElement>('#adult-confirmation input');
+        if (!adultCheckbox?.checked) {
+            showAuthError('Confirm that an adult is creating and managing this family account.');
+            adultCheckbox?.focus();
+            return;
+        }
+    }
+    window.location.assign(`/api/auth/google/start?intent=${mode}&adult=${mode === 'signup' ? '1' : '0'}`);
 }
 
 async function submitAuthForm(event: SubmitEvent): Promise<void> {

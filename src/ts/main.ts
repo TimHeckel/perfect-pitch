@@ -1,6 +1,6 @@
 import { loadState, getCurrentProfile, isRecent, STATE } from './state';
 import {
-    playAudio, selectFlagWrapper, nextAudio, resetStats, changeSelector,
+    playAudio, playFirstAudio, selectFlagWrapper, nextAudio, resetStats, changeSelector,
     changeInstrumentSelector, onTrainerOpen, playChord, getEmojiLock, stopCurrentAudio,
     _CORRECT_COLOR
 } from './game';
@@ -13,7 +13,7 @@ import {
     openProfileAdder, closeProfileAdder, addProfile, submitProfileChanges,
     deleteProfile, enableDownload, triggerEasterEgg, downloadState,
     setCurrentProfile, resetCatEmoji, registerGameCallbacks,
-    showScreenPinningInfo, closeScreenPinningModal,
+    showFirstVisitInfo,
 } from './ui';
 import { cleanSessionHistory } from './session_cleanup';
 import { initCloudSync } from './cloud';
@@ -24,6 +24,7 @@ registerGameCallbacks(getEmojiLock, resetStats, changeSelector, changeInstrument
 // Expose functions still used by inline handlers.
 const w = window as unknown as Record<string, unknown>;
 w.play_audio = playAudio;
+w.play_first_audio = playFirstAudio;
 w.next_audio = nextAudio;
 w.reset_stats = resetStats;
 w.change_selector = changeSelector;
@@ -43,8 +44,6 @@ w.enable_download = enableDownload;
 w.trigger_easter_egg = triggerEasterEgg;
 w.download_state = downloadState;
 w.play_chord = playChord;
-w.show_screen_pinning_info = showScreenPinningInfo;
-w.close_screen_pinning_modal = closeScreenPinningModal;
 w.__bsharp_correct_color = () => _CORRECT_COLOR;
 
 const FLAG_BOUNDARY_SLOP_PX = 10;
@@ -196,4 +195,5 @@ document.addEventListener('DOMContentLoaded', async function () {
     updateStatsDisplay();
     cleanSessionHistory();
     initActiveState();
+    showFirstVisitInfo();
 });

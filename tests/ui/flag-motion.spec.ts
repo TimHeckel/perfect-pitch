@@ -2,7 +2,10 @@ import { expect, test } from "@playwright/test";
 import { openMenu } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
+  });
   await page.goto("/");
 });
 

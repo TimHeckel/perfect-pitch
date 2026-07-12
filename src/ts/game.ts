@@ -23,6 +23,10 @@ let _CURRENT_COEFFICIENTS: number[] | null = null;
 let _TRAINER_PRELOADED = false;
 let _PERSIST_REACTION_FACE_ENABLED = false;
 let _LESSON_PRELOAD_TIMER: number | null = null;
+let _AUTO_CONTINUE_TIMER: number | null = null;
+let _PRACTICE_STARTED_AT: number | null = null;
+let _PRACTICE_CLOCK_TIMER: number | null = null;
+let _TRAIL_NUMBER = 1;
 export function getTestDeterministicColor(): string | null {
     return (window as unknown as Record<string, unknown>).__bsharp_test_deterministic_color as string | null ?? null;
 }
@@ -60,6 +64,34 @@ function setAudioStatus(message: string, isError = false): void {
     if (!status) return;
     status.textContent = message;
     status.classList.toggle('error', isError);
+}
+
+function renderPracticeClock(): void {
+    const elapsed = _PRACTICE_STARTED_AT === null
+        ? 0
+        : Math.max(0, Math.floor((Date.now() - _PRACTICE_STARTED_AT) / 1000));
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = String(elapsed % 60).padStart(2, '0');
+    const elapsedElem = document.getElementById('practice-elapsed');
+    if (elapsedElem) elapsedElem.textContent = `${minutes}:${seconds}`;
+
+    const checkpoint = document.getElementById('checkpoint-label');
+    if (checkpoint && !getCurrentProfile().stats.done) checkpoint.textContent = `Trail ${_TRAIL_NUMBER}`;
+}
+
+function startPracticeClock(): void {
+    if (_PRACTICE_STARTED_AT !== null) return;
+    _PRACTICE_STARTED_AT = Date.now();
+    renderPracticeClock();
+    _PRACTICE_CLOCK_TIMER = window.setInterval(renderPracticeClock, 1000);
+}
+
+function resetPracticeClock(): void {
+    _PRACTICE_STARTED_AT = null;
+    _TRAIL_NUMBER = 1;
+    if (_PRACTICE_CLOCK_TIMER !== null) window.clearInterval(_PRACTICE_CLOCK_TIMER);
+    _PRACTICE_CLOCK_TIMER = null;
+    renderPracticeClock();
 }
 
 function cancelLessonPreload(): void {
@@ -134,6 +166,7 @@ export function populateAudio(): void {
     }
     _AUDIO_PLAYED = false;
     setAudioStatus('Ready to play');
+    renderPracticeClock();
 }
 
 export function playAudio(): void {
@@ -141,6 +174,7 @@ export function playAudio(): void {
     if (playButton && playButton.classList.contains('deactivated')) return;
     if (!_CURRENT_AUDIO) return;
 
+    startPracticeClock();
     playButton?.classList.remove('ready-action');
     const [chord, duration] = _CURRENT_AUDIO;
     stopCurrentAudio();
@@ -164,7 +198,14 @@ export function playAudio(): void {
 
 export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     if (_SELECTED_ELEM !== null) return;
-    if (!_AUDIO_PLAYED) return;
+    if (!_AUDIO_PLAYED) {
+        const playButton = document.getElementById('play-button');
+        if (playButton?.classList.contains('ready-action')) {
+            const dialog = document.getElementById('play-first-dialog') as HTMLDialogElement | null;
+            if (dialog && !dialog.open) dialog.showModal();
+        }
+        return;
+    }
     if (getCurrentProfile().stats.identifications >= getCurrentTargetNumber()) return;
 
     const chosenColor = wrapperElem.dataset.color;
@@ -196,6 +237,12 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
         saveSessionHistory();
         saveState();
         setAudioStatus('Trail complete');
+        _AUTO_CONTINUE_TIMER = window.setTimeout(() => {
+            _AUTO_CONTINUE_TIMER = null;
+            _TRAIL_NUMBER += 1;
+            resetStats(true, true);
+            playAudio();
+        }, 1400);
     }
 
     if (getCurrentProfile().persist_reaction_face &&
@@ -220,6 +267,12 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     }
 }
 
+export function playFirstAudio(): void {
+    const dialog = document.getElementById('play-first-dialog') as HTMLDialogElement | null;
+    dialog?.close();
+    playAudio();
+}
+
 export function nextAudio(): void {
     const nextButton = document.getElementById('next-chord');
     if (!nextButton || nextButton.classList.contains('deactivated')) return;
@@ -235,7 +288,12 @@ export function nextAudio(): void {
     nextButton.classList.add('deactivated');
 }
 
-export function resetStats(done = true): void {
+export function resetStats(done = true, continuePractice = false): void {
+    if (_AUTO_CONTINUE_TIMER !== null) {
+        window.clearTimeout(_AUTO_CONTINUE_TIMER);
+        _AUTO_CONTINUE_TIMER = null;
+    }
+    if (!continuePractice) resetPracticeClock();
     const profile = getCurrentProfile();
     profile.stats.done = done;
     if (!done || profile.stats.identifications > 0) {

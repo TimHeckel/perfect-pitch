@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
+  });
   await page.addInitScript(() => {
     (window as any).__audioSpy = {
       callLog: [] as string[],

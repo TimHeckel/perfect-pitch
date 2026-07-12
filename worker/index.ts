@@ -1,6 +1,8 @@
 interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
 }
 
 interface AccountRow {
@@ -32,6 +34,7 @@ interface SyncPayload {
 }
 
 const SESSION_COOKIE = 'pp_session';
+const GOOGLE_OAUTH_COOKIE = 'pp_google_oauth';
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
 // Cloudflare Workers' WebCrypto PBKDF2 implementation caps iterations at 100,000.
 const PASSWORD_ITERATIONS = 100_000;
@@ -71,6 +74,15 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
   }
   if (url.pathname === '/api/auth/login' && request.method === 'POST') {
     return login(request, env);
+  }
+  if (url.pathname === '/api/auth/google/status' && request.method === 'GET') {
+    return json({ configured: googleAuthConfigured(env) });
+  }
+  if (url.pathname === '/api/auth/google/start' && request.method === 'GET') {
+    return startGoogleAuth(env, url);
+  }
+  if (url.pathname === '/api/auth/google/callback' && request.method === 'GET') {
+    return finishGoogleAuth(request, env, url);
   }
   if (url.pathname === '/api/auth/logout' && request.method === 'POST') {
     return logout(request, env);
@@ -150,6 +162,167 @@ async function login(request: Request, env: Env): Promise<Response> {
   }
 
   return createSession(env.DB, { id: account.id, email: account.email });
+}
+
+function googleAuthConfigured(env: Env): boolean {
+  return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+}
+
+async function startGoogleAuth(env: Env, url: URL): Promise<Response> {
+  if (!googleAuthConfigured(env)) return json({ error: 'Google sign-in is not configured yet.' }, 503);
+
+  const intent = url.searchParams.get('intent') === 'login' ? 'login' : 'signup';
+  const adult = intent === 'signup' && url.searchParams.get('adult') === '1';
+  if (intent === 'signup' && !adult) {
+    return redirectAuthError(url, 'Confirm that an adult is creating and managing this family account.');
+  }
+
+  const state = randomHex(24);
+  const verifier = randomBase64Url(48);
+  const challenge = await sha256Base64Url(verifier);
+  const redirectUri = new URL('/api/auth/google/callback', url.origin).toString();
+  const authorization = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+  authorization.searchParams.set('client_id', env.GOOGLE_CLIENT_ID!);
+  authorization.searchParams.set('redirect_uri', redirectUri);
+  authorization.searchParams.set('response_type', 'code');
+  authorization.searchParams.set('scope', 'openid email');
+  authorization.searchParams.set('state', state);
+  authorization.searchParams.set('code_challenge', challenge);
+  authorization.searchParams.set('code_challenge_method', 'S256');
+  authorization.searchParams.set('prompt', 'select_account');
+
+  const oauthValue = [state, intent, adult ? '1' : '0', verifier].join('.');
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: authorization.toString(),
+      'Set-Cookie': googleOAuthCookie(oauthValue),
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
+async function finishGoogleAuth(request: Request, env: Env, url: URL): Promise<Response> {
+  if (!googleAuthConfigured(env)) return redirectAuthError(url, 'Google sign-in is not configured yet.');
+  if (url.searchParams.get('error')) return redirectAuthError(url, 'Google sign-in was cancelled.');
+
+  const cookie = getCookie(request, GOOGLE_OAUTH_COOKIE);
+  const [expectedState, intent, adultFlag, verifier] = cookie?.split('.') ?? [];
+  const state = url.searchParams.get('state');
+  const code = url.searchParams.get('code');
+  if (!cookie || !state || !code || state !== expectedState || !verifier) {
+    return redirectAuthError(url, 'Google sign-in expired. Please try again.');
+  }
+
+  const redirectUri = new URL('/api/auth/google/callback', url.origin).toString();
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_CLIENT_ID!,
+      client_secret: env.GOOGLE_CLIENT_SECRET!,
+      code,
+      code_verifier: verifier,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+    }),
+  });
+  if (!tokenResponse.ok) return redirectAuthError(url, 'Google sign-in could not be completed. Please try again.');
+  const tokens = await tokenResponse.json<{ access_token?: string }>();
+  if (!tokens.access_token) return redirectAuthError(url, 'Google sign-in could not be completed. Please try again.');
+
+  const profileResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+  });
+  if (!profileResponse.ok) return redirectAuthError(url, 'Google profile verification failed. Please try again.');
+  const profile = await profileResponse.json<{
+    sub?: string;
+    email?: string;
+    email_verified?: boolean;
+  }>();
+  const email = normalizeEmail(profile.email);
+  if (!profile.sub || !profile.email_verified || !email) {
+    return redirectAuthError(url, 'Google must provide a verified email address.');
+  }
+
+  const account = await findOrCreateGoogleAccount(
+    env.DB,
+    profile.sub,
+    email,
+    intent === 'signup',
+    adultFlag === '1',
+  );
+  if (account instanceof Response) return account;
+
+  const headers = new Headers({ Location: '/' });
+  headers.append('Set-Cookie', await createSessionCookie(env.DB, account));
+  headers.append('Set-Cookie', expiredGoogleOAuthCookie());
+  headers.set('Cache-Control', 'no-store');
+  return new Response(null, { status: 302, headers });
+}
+
+async function findOrCreateGoogleAccount(
+  db: D1Database,
+  googleSub: string,
+  email: string,
+  allowCreate: boolean,
+  adultConfirmed: boolean,
+): Promise<SessionAccount | Response> {
+  const byGoogle = await db.prepare(
+    'SELECT id, email FROM accounts WHERE google_sub = ?',
+  ).bind(googleSub).first<SessionAccount>();
+  if (byGoogle) return byGoogle;
+
+  const byEmail = await db.prepare(
+    'SELECT id, email, google_sub FROM accounts WHERE email = ?',
+  ).bind(email).first<SessionAccount & { google_sub: string | null }>();
+  if (byEmail) {
+    if (byEmail.google_sub && byEmail.google_sub !== googleSub) {
+      return authRedirectResponse('That email is already connected to another Google account.');
+    }
+    await db.prepare('UPDATE accounts SET google_sub = ?, updated_at = ? WHERE id = ?')
+      .bind(googleSub, unixTime(), byEmail.id).run();
+    return { id: byEmail.id, email: byEmail.email };
+  }
+
+  if (!allowCreate) return authRedirectResponse('No saved account was found. Choose Create account first.');
+  if (!adultConfirmed) return authRedirectResponse('An adult must create and manage the family account.');
+
+  const id = crypto.randomUUID();
+  const now = unixTime();
+  await db.batch([
+    db.prepare(
+      'INSERT INTO accounts (id, email, password_hash, password_salt, google_sub, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).bind(id, email, randomHex(32), randomHex(16), googleSub, now, now),
+    db.prepare(
+      'INSERT INTO household_settings (account_id, current_profile_id, current_chord, updated_at) VALUES (?, NULL, ?, ?)',
+    ).bind(id, 'yellow', now),
+  ]);
+  return { id, email };
+}
+
+function authRedirectResponse(message: string): Response {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: `/?authError=${encodeURIComponent(message)}`,
+      'Set-Cookie': expiredGoogleOAuthCookie(),
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
+function redirectAuthError(url: URL, message: string): Response {
+  const target = new URL('/', url.origin);
+  target.searchParams.set('authError', message);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: target.toString(),
+      'Set-Cookie': expiredGoogleOAuthCookie(),
+      'Cache-Control': 'no-store',
+    },
+  });
 }
 
 async function logout(request: Request, env: Env): Promise<Response> {
@@ -261,6 +434,10 @@ async function putSync(request: Request, env: Env, account: SessionAccount): Pro
 }
 
 async function createSession(db: D1Database, account: SessionAccount, status = 200): Promise<Response> {
+  return json({ user: account }, status, { 'Set-Cookie': await createSessionCookie(db, account) });
+}
+
+async function createSessionCookie(db: D1Database, account: SessionAccount): Promise<string> {
   const token = randomHex(32);
   const now = unixTime();
   await db.batch([
@@ -269,7 +446,7 @@ async function createSession(db: D1Database, account: SessionAccount, status = 2
       'INSERT INTO sessions (token_hash, account_id, expires_at, created_at) VALUES (?, ?, ?, ?)',
     ).bind(await sha256(token), account.id, now + SESSION_SECONDS, now),
   ]);
-  return json({ user: account }, status, { 'Set-Cookie': sessionCookie(token) });
+  return sessionCookie(token);
 }
 
 async function requireAccount(request: Request, env: Env): Promise<SessionAccount | Response> {
@@ -354,6 +531,23 @@ function randomHex(length: number): string {
   return bytesHex(bytes);
 }
 
+function randomBase64Url(length: number): string {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return bytesBase64Url(bytes);
+}
+
+async function sha256Base64Url(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(value));
+  return bytesBase64Url(new Uint8Array(digest));
+}
+
+function bytesBase64Url(bytes: Uint8Array): string {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
 function bytesHex(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
@@ -388,6 +582,14 @@ function sessionCookie(token: string): string {
 
 function expiredSessionCookie(): string {
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`;
+}
+
+function googleOAuthCookie(value: string): string {
+  return `${GOOGLE_OAUTH_COOKIE}=${encodeURIComponent(value)}; Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax; Max-Age=600`;
+}
+
+function expiredGoogleOAuthCookie(): string {
+  return `${GOOGLE_OAUTH_COOKIE}=; Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 }
 
 function json(data: unknown, status = 200, headers: HeadersInit = {}): Response {

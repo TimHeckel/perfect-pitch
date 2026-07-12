@@ -4,6 +4,7 @@ import { openMenu } from "./helpers";
 test("guide embeds the local Pitch Trail intro without a YouTube link", async ({
   page,
 }) => {
+  await page.addInitScript(() => localStorage.setItem("pitchtrail_info_seen_v1", "true"));
   await page.goto("/");
   await openMenu(page);
   await page.locator("#i-infobox-trigger").click();

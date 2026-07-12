@@ -29,9 +29,8 @@ export async function createProfile(
   await openProfilePanel(page);
   await page.locator("#profile-switcher .switcher-add").click();
   await page.locator("#profile_name_setting").fill(name);
-  await page
-    .locator(`input[name='profile_icon_selector'][value='${icon}']`)
-    .check();
+  const iconInput = page.locator(`input[name='profile_icon_selector'][value='${icon}']`);
+  await page.locator(`label[for='${await iconInput.getAttribute("id")}']`).click();
   await page.locator("#add-user-button").click();
   // Close expansion bar so subsequent interactions start from a clean state
   await closeMenu(page);

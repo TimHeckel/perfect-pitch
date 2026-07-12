@@ -5,7 +5,10 @@ import { openMenu } from "../ui/helpers";
 const BOT_BLOCKED = new Set([401, 403, 429]);
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
+  });
   await page.goto("/");
 });
 

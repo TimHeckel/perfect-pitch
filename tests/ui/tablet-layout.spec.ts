@@ -9,6 +9,7 @@ for (const viewport of tabletViewports) {
   test(`keeps the complete lesson touch-ready on tablet ${viewport.name}`, async ({
     page,
   }) => {
+    await page.addInitScript(() => localStorage.setItem("pitchtrail_info_seen_v1", "true"));
     await page.setViewportSize(viewport);
     await page.goto("/");
 

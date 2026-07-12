@@ -172,8 +172,9 @@
                     <label for="profile_name">Profile Name:</label>
                     <input type="text" id="profile_name_setting" class="entry">
                 </div>
-                <div class="entry-row">
-                    <label for="profile_icon_selector">Icon:</label>
+                <fieldset class="profile-setting-group">
+                    <legend>Trail icon</legend>
+                    <div class="profile-icon-picker">
                     <input type="radio" name="profile_icon_selector" value="fa-user" id="npis-user">
                     <label for="npis-user"><i class="fa fa-solid fa-user"></i></label>
                     <input type="radio" name="profile_icon_selector" value="fa-truck" id="npis-truck">
@@ -192,57 +193,26 @@
                     <label for="npis-trophy"><i class="fa fa-solid fa-trophy"></i></label>
                     <input type="radio" name="profile_icon_selector" value="fa-taxi" id="npis-taxi">
                     <label for="npis-taxi"><i class="fa fa-solid fa-taxi"></i></label>
-                </div>
-                <div class="entry-row">
-                    <label for="show_chord_name_mode">Show chord names:</label>
-                    <select class="selector" name="show_chord_name_mode" id="show-chord-name-mode-selector">
-                        <option value="always">Always</option>
-                        <option value="black_only">Black chords only</option>
-                        <option value="never">Never</option>
-                    </select>
-                </div>
-                <div class="entry-row">
-                    <label for="chord_reveal_mode">Reveal mode:</label>
-                    <select class="selector" name="chord_reveal_mode" id="chord-reveal-mode-selector">
-                        <option value="always">Always on</option>
-                        <option value="after_guess">Reveal after guess</option>
-                    </select>
-                </div>
-                <div class="entry-row">
-                    <label for="chord_name_display_mode">Chord name display:</label>
-                    <select class="selector" name="chord_name_display_mode" id="chord-name-display-mode-selector">
-                        <option value="shapes_and_letters">Shapes and Letters</option>
-                        <option value="shapes_only">Shapes only</option>
-                        <option value="letters_only">Letters only</option>
-                    </select>
-                </div>
-                <div class="entry-row">
-                    <label for="persist_reaction_face_setting">Persist Reaction Face:</label>
-                    <input type="checkbox" id="persist_reaction_face_setting" class="entry">
-                </div>
-                <div class="entry-row">
-                    <label for="target_number_setting">Session length:</label>
-                    <input type="number" id="target_number_setting" class="entry" min="5" max="25" step="1">
-                </div>
+                    </div>
+                </fieldset>
+                <fieldset class="profile-setting-group">
+                    <legend>Questions per trail</legend>
+                    <p>Each checkpoint rolls straight into the next trail.</p>
+                    <div class="trail-length-presets">
+                        <input type="radio" name="target_number_setting" value="5" id="trail-length-5">
+                        <label for="trail-length-5"><strong>5</strong><span>Quick</span></label>
+                        <input type="radio" name="target_number_setting" value="10" id="trail-length-10">
+                        <label for="trail-length-10"><strong>10</strong><span>Standard</span></label>
+                        <input type="radio" name="target_number_setting" value="15" id="trail-length-15">
+                        <label for="trail-length-15"><strong>15</strong><span>Long</span></label>
+                    </div>
+                </fieldset>
                 <div class="entry-row">
                     <label for="color_scheme_setting">Color scheme:</label>
                     <select class="selector" name="color_scheme_setting" id="color-scheme-selector">
                         <option value="dark">Dark</option>
                         <option value="light">Light</option>
                     </select>
-                </div>
-                <div class="entry-row">
-                    <label for="chord_selection_mode_setting">Chord selection:</label>
-                    <select class="selector" name="chord_selection_mode_setting" id="chord-selection-mode-selector">
-                        <option value="random">Random</option>
-                        <option value="adaptive">Adaptive</option>
-                    </select>
-                </div>
-                <div class="entry-row">
-                    <label>Pin screen:</label>
-                    <button class="button settings-button" type="button" onclick="show_screen_pinning_info()">
-                        <i class="fa fa-thumb-tack"></i> Info
-                    </button>
                 </div>
                 <!-- Buttons are hidden by default (.profile-info-container button { display: none }).
                      Use "settings-button" for profile-edit buttons or "add-button" for profile-add buttons;
@@ -444,7 +414,11 @@
                 <span id="reaction-emoji"></span>
             </div>
             <div class="stats-wrapper">
-                <span class="checkpoint-label" id="checkpoint-label">Trail checkpoint</span>
+                <div class="practice-clock" aria-label="Practice time">
+                    <strong id="practice-elapsed">0:00</strong>
+                    <span>practice time</span>
+                </div>
+                <span class="checkpoint-label" id="checkpoint-label">Trail 1</span>
                 <div class="stats-display chord-stats-display" id="chord-stats-display">
                     <div class="num-correct">
                         <span class="stats-correct" id="stats-correct">0</span><span class="stats-divider" id="stats-divider"> / </span><span class="stats-total" id="stats-total">0</span>
@@ -526,35 +500,28 @@
         </defs>
     </svg>
 </div>
-        <div class="modal-overlay" id="screen-pinning-modal">
-        <div class="modal-content">
-            <p><strong>Screen Pinning</strong> locks the app on screen so children can't navigate away.</p>
-            <p><strong>Enable it:</strong></p>
-            <ol>
-                <li>Open <strong>Settings &gt; Security &gt; More security settings &gt; App Pinning</strong> (on Samsung: Security &gt; Other security settings &gt; Pin Windows)</li>
-                <li>Toggle it on. Enable "Ask for unlock to unpin" for extra security</li>
-            </ol>
-            <p><strong>Pin the app:</strong></p>
-            <ol>
-                <li>Open Pitch Trail, then tap the Recent Apps button (or swipe up and hold)</li>
-                <li>Tap the app icon at the top of the preview, then tap <strong>Pin</strong></li>
-            </ol>
-            <p><strong>Unpin:</strong> Swipe up and hold from the bottom (gesture nav) or hold Back + Overview together (button nav).</p>
-            <button class="button" type="button" onclick="close_screen_pinning_modal()">OK</button>
-        </div>
-    </div>
 </div>
 
     <dialog id="account-dialog" class="account-dialog">
         <button id="account-close" class="dialog-close" type="button" aria-label="Close account dialog">×</button>
         <div id="account-signed-out">
             <p class="dialog-kicker">Family basecamp</p>
-            <h2>Keep every small win.</h2>
+            <h2 id="account-dialog-title">Sign Up To Save Progress</h2>
             <p class="dialog-intro">Create one family account, then add a separate profile for each child. Progress follows you to any device.</p>
             <div class="auth-tabs" role="tablist" aria-label="Account action">
                 <button class="active" type="button" data-auth-mode="signup">Create account</button>
                 <button type="button" data-auth-mode="login">Sign in</button>
             </div>
+            <button id="google-auth-button" class="google-auth-button hidden" type="button">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.5h3.3c1.9-1.8 2.9-4.4 2.9-7.4Z"/>
+                    <path fill="#34A853" d="M12 22c2.7 0 5-.9 6.7-2.4l-3.3-2.5c-.9.6-2.1 1-3.4 1-2.6 0-4.8-1.8-5.6-4.2H3v2.6A10 10 0 0 0 12 22Z"/>
+                    <path fill="#FBBC05" d="M6.4 13.9A6 6 0 0 1 6.1 12c0-.7.1-1.3.3-1.9V7.5H3A10 10 0 0 0 3 16.5l3.4-2.6Z"/>
+                    <path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.9 1.5l2.9-2.9A9.8 9.8 0 0 0 3 7.5l3.4 2.6C7.2 7.7 9.4 5.9 12 5.9Z"/>
+                </svg>
+                <span>Continue with Google</span>
+            </button>
+            <div id="auth-divider" class="auth-divider hidden"><span>or</span></div>
             <form id="account-form" data-mode="signup">
                 <label for="account-email-input">Adult email</label>
                 <input id="account-email-input" name="email" type="email" autocomplete="email" required>
@@ -576,6 +543,12 @@
             <p>Add or switch child profiles from the profile button in the top navigation.</p>
             <button id="account-logout" class="secondary-action" type="button">Sign out on this device</button>
         </div>
+    </dialog>
+
+    <dialog id="play-first-dialog" class="play-first-dialog" aria-labelledby="play-first-title">
+        <div class="trail-marker-play" aria-hidden="true"><i class="fa fa-play"></i></div>
+        <h2 id="play-first-title">Play first</h2>
+        <button id="play-first-action" type="button" onclick="play_first_audio()">Play sound</button>
     </dialog>
 
     <script src="bsharp.js"></script>

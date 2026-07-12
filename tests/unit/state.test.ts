@@ -22,6 +22,7 @@ describe('initializeProfileDefaults', () => {
         expect(partial.persist_reaction_face).toBe(true);
         expect(partial.current_instrument).toBe(DEFAULT_INSTRUMENT);
         expect(partial.level_started_at).toEqual(expect.any(Number));
+        expect(partial.chord_selection_mode).toBe('adaptive');
     });
 
     it('does not overwrite existing values', () => {
@@ -49,6 +50,15 @@ describe('initializeProfileDefaults', () => {
         } as unknown as Profile;
         initializeProfileDefaults(profile);
         expect(profile.current_instrument).toBe('guitar');
+    });
+
+    it('migrates manual random selection to adaptive practice', () => {
+        const profile = {
+            name: 'Test', icon: 'fa-user', id: 1,
+            chord_selection_mode: 'random',
+        } as unknown as Profile;
+        initializeProfileDefaults(profile);
+        expect(profile.chord_selection_mode).toBe('adaptive');
     });
 
     it('turns a legacy long session into a completed short trail without losing accuracy', () => {

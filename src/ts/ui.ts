@@ -6,8 +6,7 @@ import {
     DEFAULT_SHOW_CHORD_MODE, DEFAULT_REVEAL_CHORD_MODE, DEFAULT_CHORD_DISPLAY_MODE,
     DEFAULT_SINGLE_NOTE_MODE, DEFAULT_SINGLE_NOTE_CORRECTNESS_MODE,
     DEFAULT_PERSIST_REACTION_FACE, DEFAULT_ENABLE_ONBOARDING_HINTS, DEFAULT_COLOR_SCHEME,
-    DEFAULT_CHORD_SELECTION_MODE, DEFAULT_INSTRUMENT,
-    MIN_TARGET_NUMBER, MAX_TARGET_NUMBER,
+    DEFAULT_CHORD_SELECTION_MODE, DEFAULT_INSTRUMENT, TRAIL_LENGTH_PRESETS,
 } from './state';
 import {
     calculatePercentage, calculateNeutralLevel, getCatEmoji, normalizeStatsObject
@@ -122,9 +121,7 @@ export function updateStatsDisplay(): void {
     if (identifications >= target) playButton?.classList.remove('ready-action');
 
     const checkpointLabel = document.getElementById('checkpoint-label');
-    if (checkpointLabel) {
-        checkpointLabel.textContent = identifications >= target ? 'Trail complete' : 'Trail checkpoint';
-    }
+    if (checkpointLabel && identifications >= target) checkpointLabel.textContent = 'Trail complete';
 
     if (correct === identifications) {
         containerElem.classList.add('perfect');
@@ -301,6 +298,14 @@ export function toggleInfoboxVisibility(): void {
     togglePanel(document.getElementById('i-infobox')!);
 }
 
+const INFO_SEEN_KEY = 'pitchtrail_info_seen_v1';
+
+export function showFirstVisitInfo(): void {
+    if (localStorage.getItem(INFO_SEEN_KEY)) return;
+    localStorage.setItem(INFO_SEEN_KEY, 'true');
+    togglePanel(document.getElementById('i-infobox')!);
+}
+
 export function toggleStatsHistoryVisibility(): void {
     populateStatsHistoryModal();
     togglePanel(document.getElementById('stats-history-container')!);
@@ -424,9 +429,8 @@ function isProfileNameTaken(profileName: string): boolean {
 }
 
 function validTargetNumber(value: string): boolean {
-    if (!validInt(value)) return false;
-    const target = parseInt(value);
-    return target >= MIN_TARGET_NUMBER && target <= MAX_TARGET_NUMBER;
+    return validInt(value)
+        && TRAIL_LENGTH_PRESETS.includes(parseInt(value) as typeof TRAIL_LENGTH_PRESETS[number]);
 }
 
 function getProfileSettings(): {
@@ -449,18 +453,19 @@ function getProfileSettings(): {
 
     const id = JSON.parse(profileContainer.dataset.id || 'null');
 
-    const showChordMode = (document.getElementById('show-chord-name-mode-selector') as HTMLSelectElement).value;
-    const revealChordMode = (document.getElementById('chord-reveal-mode-selector') as HTMLSelectElement).value;
-    const chordDisplayMode = (document.getElementById('chord-name-display-mode-selector') as HTMLSelectElement).value;
+    const showChordMode = DEFAULT_SHOW_CHORD_MODE;
+    const revealChordMode = DEFAULT_REVEAL_CHORD_MODE;
+    const chordDisplayMode = DEFAULT_CHORD_DISPLAY_MODE;
     const singleNoteModeElem = document.getElementById('single-note-trainer-mode-selector') as HTMLSelectElement | null;
     const singleNoteMode = singleNoteModeElem ? singleNoteModeElem.value : DEFAULT_SINGLE_NOTE_MODE;
     const singleNoteCorrectnessModeElem = document.getElementById('single-note-trainer-correctness-mode-selector') as HTMLSelectElement | null;
     const singleNoteCorrectnessMode = singleNoteCorrectnessModeElem ? singleNoteCorrectnessModeElem.value : DEFAULT_SINGLE_NOTE_CORRECTNESS_MODE;
-    const targetNumber = (document.getElementById('target_number_setting') as HTMLInputElement).value;
-    const persistReactionFace = (document.getElementById('persist_reaction_face_setting') as HTMLInputElement).checked;
+    const targetNumber = document.querySelector<HTMLInputElement>('input[name="target_number_setting"]:checked')?.value
+        ?? String(DEFAULT_TARGET_NUMBER);
+    const persistReactionFace = DEFAULT_PERSIST_REACTION_FACE;
     const enableOnboardingHints = false;
     const colorScheme = (document.getElementById('color-scheme-selector') as HTMLSelectElement).value;
-    const chordSelectionMode = (document.getElementById('chord-selection-mode-selector') as HTMLSelectElement).value;
+    const chordSelectionMode = DEFAULT_CHORD_SELECTION_MODE;
 
     return {
         name: profileName,
@@ -494,12 +499,6 @@ function clearProfileDialog(): void {
         elem.classList.remove('visible');
     }
 
-    const showChordMode = profileDialog.querySelector('select#show-chord-name-mode-selector') as HTMLSelectElement;
-    if (showChordMode) showChordMode.value = DEFAULT_SHOW_CHORD_MODE;
-
-    const chordDisplayMode = profileDialog.querySelector('select#chord-name-display-mode-selector') as HTMLSelectElement;
-    if (chordDisplayMode) chordDisplayMode.value = DEFAULT_CHORD_DISPLAY_MODE;
-
     const singleNoteMode = document.getElementById('single-note-trainer-mode-selector') as HTMLSelectElement;
     if (singleNoteMode) singleNoteMode.value = DEFAULT_SINGLE_NOTE_MODE;
 
@@ -509,8 +508,8 @@ function clearProfileDialog(): void {
     const colorSchemeSelector = document.getElementById('color-scheme-selector') as HTMLSelectElement;
     if (colorSchemeSelector) colorSchemeSelector.value = DEFAULT_COLOR_SCHEME;
 
-    const chordSelectionModeSelector = document.getElementById('chord-selection-mode-selector') as HTMLSelectElement;
-    if (chordSelectionModeSelector) chordSelectionModeSelector.value = DEFAULT_CHORD_SELECTION_MODE;
+    const defaultLength = document.getElementById(`trail-length-${DEFAULT_TARGET_NUMBER}`) as HTMLInputElement | null;
+    if (defaultLength) defaultLength.checked = true;
 
     profileDialog.dataset.id = 'null';
 }
@@ -535,17 +534,14 @@ function populateProfileSettings(): void {
         }
     }
 
-    (document.getElementById('target_number_setting') as HTMLInputElement).value = String(profile.target_number);
-    (document.getElementById('show-chord-name-mode-selector') as HTMLSelectElement).value = profile.show_chord_mode;
-    (document.getElementById('chord-reveal-mode-selector') as HTMLSelectElement).value = profile.reveal_chord_mode;
-    (document.getElementById('chord-name-display-mode-selector') as HTMLSelectElement).value = profile.chord_display_mode;
+    const target = [5, 10, 15].includes(profile.target_number) ? profile.target_number : DEFAULT_TARGET_NUMBER;
+    const targetOption = document.getElementById(`trail-length-${target}`) as HTMLInputElement | null;
+    if (targetOption) targetOption.checked = true;
     const singleNoteModeElem = document.getElementById('single-note-trainer-mode-selector') as HTMLSelectElement | null;
     if (singleNoteModeElem) singleNoteModeElem.value = profile.single_note_mode;
     const singleNoteCorrectnessModeElem = document.getElementById('single-note-trainer-correctness-mode-selector') as HTMLSelectElement | null;
     if (singleNoteCorrectnessModeElem) singleNoteCorrectnessModeElem.value = profile.single_note_correctness_mode;
-    (document.getElementById('persist_reaction_face_setting') as HTMLInputElement).checked = profile.persist_reaction_face;
     (document.getElementById('color-scheme-selector') as HTMLSelectElement).value = profile.color_scheme;
-    (document.getElementById('chord-selection-mode-selector') as HTMLSelectElement).value = profile.chord_selection_mode;
 
     profileDialog.dataset.id = String(profile.id);
 
@@ -588,17 +584,9 @@ export function openProfileAdder(): void {
     }
 
     (document.getElementById('profile_name_setting') as HTMLInputElement).disabled = false;
-    (document.getElementById('target_number_setting') as HTMLInputElement).value = String(DEFAULT_TARGET_NUMBER);
-
-    const showChordMode = document.getElementById('show-chord-name-mode-selector') as HTMLSelectElement | null;
-    if (showChordMode) showChordMode.value = DEFAULT_SHOW_CHORD_MODE;
-    const revealChordMode = document.getElementById('chord-reveal-mode-selector') as HTMLSelectElement | null;
-    if (revealChordMode) revealChordMode.value = DEFAULT_REVEAL_CHORD_MODE;
-    const chordDisplayMode = document.getElementById('chord-name-display-mode-selector') as HTMLSelectElement | null;
-    if (chordDisplayMode) chordDisplayMode.value = DEFAULT_CHORD_DISPLAY_MODE;
-    (document.getElementById('persist_reaction_face_setting') as HTMLInputElement).checked = DEFAULT_PERSIST_REACTION_FACE;
+    const defaultLength = document.getElementById(`trail-length-${DEFAULT_TARGET_NUMBER}`) as HTMLInputElement | null;
+    if (defaultLength) defaultLength.checked = true;
     (document.getElementById('color-scheme-selector') as HTMLSelectElement).value = DEFAULT_COLOR_SCHEME;
-    (document.getElementById('chord-selection-mode-selector') as HTMLSelectElement).value = DEFAULT_CHORD_SELECTION_MODE;
 
     // Pre-select the first icon
     const firstIcon = profileContainer.querySelector("input[name='profile_icon_selector']") as HTMLInputElement | null;
@@ -620,7 +608,7 @@ export function addProfile(): void {
     } else if (nameTaken) {
         alert('A profile with the name ' + newProfileValues.name + ' already exists.');
     } else if (!targetNumValid) {
-        alert(`Session length must be between ${MIN_TARGET_NUMBER} and ${MAX_TARGET_NUMBER}.`);
+        alert('Choose 5, 10, or 15 questions per trail.');
     } else {
         const profile = newProfile(
             newProfileValues.name,
@@ -657,7 +645,7 @@ export function submitProfileChanges(): void {
         return;
     }
     if (!validTargetNumber(profileValues.target_number)) {
-        alert(`Session length must be between ${MIN_TARGET_NUMBER} and ${MAX_TARGET_NUMBER}.`);
+        alert('Choose 5, 10, or 15 questions per trail.');
         return;
     }
 
@@ -828,14 +816,6 @@ export function triggerEasterEgg(): void {
     }
 
     _EASTER_EGG_ENABLED = true;
-}
-
-export function showScreenPinningInfo(): void {
-    document.getElementById('screen-pinning-modal')!.classList.add('visible');
-}
-
-export function closeScreenPinningModal(): void {
-    document.getElementById('screen-pinning-modal')!.classList.remove('visible');
 }
 
 export function downloadState(): void {

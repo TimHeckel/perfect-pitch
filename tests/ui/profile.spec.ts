@@ -7,7 +7,10 @@ import {
 } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
+  });
   await page.goto("/");
 });
 
@@ -38,12 +41,7 @@ test("add form populates defaults", async ({ page }) => {
   await page.locator("#profile-switcher .switcher-add").click();
 
   // New kid-sized sessions default to ten identifications.
-  await expect(page.locator("#target_number_setting")).toHaveValue("10");
-
-  // Show chord name mode should have a default selected
-  const showChordMode = page.locator("#show-chord-name-mode-selector");
-  await expect(showChordMode).toBeVisible();
-  await expect(showChordMode).not.toHaveValue("");
+  await expect(page.locator("input[name='target_number_setting']:checked")).toHaveValue("10");
 
   // An icon should be pre-selected
   const checkedIcon = page.locator(
@@ -137,9 +135,7 @@ test("duplicate profile name shows alert", async ({ page }) => {
   await openProfilePanel(page);
   await page.locator("#profile-switcher .switcher-add").click();
   await page.locator("#profile_name_setting").fill("Duplicate");
-  await page
-    .locator("input[name='profile_icon_selector'][value='fa-truck']")
-    .check();
+  await page.locator("label[for='npis-truck']").click();
   await page.locator("#add-user-button").click();
 
   expect(alertFired).toBe(true);

@@ -2,7 +2,10 @@ import { test, expect } from "@playwright/test";
 import { openProfilePanel, createProfile } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
+  });
   await page.goto("/");
 });
 
@@ -23,9 +26,7 @@ test("color scheme setting persists across profile switch", async ({
   await openProfilePanel(page);
   await page.locator("#profile-switcher .switcher-add").click();
   await page.locator("#profile_name_setting").fill("Light User");
-  await page
-    .locator("input[name='profile_icon_selector'][value='fa-bolt']")
-    .check();
+  await page.locator("label[for='npis-bolt']").click();
   await page.locator("#color-scheme-selector").selectOption("light");
   await page.locator("#add-user-button").click();
 
@@ -51,9 +52,7 @@ test("color scheme applies on page reload", async ({ page }) => {
   await openProfilePanel(page);
   await page.locator("#profile-switcher .switcher-add").click();
   await page.locator("#profile_name_setting").fill("Reload User");
-  await page
-    .locator("input[name='profile_icon_selector'][value='fa-bolt']")
-    .check();
+  await page.locator("label[for='npis-bolt']").click();
   await page.locator("#color-scheme-selector").selectOption("light");
   await page.locator("#add-user-button").click();
 

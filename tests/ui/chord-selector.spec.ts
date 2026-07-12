@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     if (!sessionStorage.getItem("preserve-state")) localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
   });
   await page.goto("/");
 });

@@ -14,8 +14,7 @@ export const SESSION_TIMEOUT_TIME_SECONDS = 60 * 30;
 const DEFAULT_CHORD = Object.keys(CHORDS_TONE)[1];
 export const DEFAULT_INSTRUMENT = 'piano_1';
 export const DEFAULT_TARGET_NUMBER = 10;
-export const MIN_TARGET_NUMBER = 5;
-export const MAX_TARGET_NUMBER = 25;
+export const TRAIL_LENGTH_PRESETS = [5, 10, 15] as const;
 export const DEFAULT_SHOW_CHORD_MODE = 'black_only';
 export const DEFAULT_REVEAL_CHORD_MODE = 'always';
 export const DEFAULT_CHORD_DISPLAY_MODE = 'shapes_and_letters';
@@ -24,7 +23,7 @@ export const DEFAULT_SINGLE_NOTE_CORRECTNESS_MODE = 'only_correct';
 export const DEFAULT_PERSIST_REACTION_FACE = true;
 export const DEFAULT_ENABLE_ONBOARDING_HINTS = false;
 export const DEFAULT_COLOR_SCHEME = 'light';
-export const DEFAULT_CHORD_SELECTION_MODE = 'random';
+export const DEFAULT_CHORD_SELECTION_MODE = 'adaptive';
 
 export let STATE: AppState = null!;
 export let _SESSION_HISTORY: Record<string, Record<string, SessionStats[]>> | null = null;
@@ -127,11 +126,8 @@ export function initializeProfileDefaults(profile: Profile): void {
     }
 
     const target = Number(profile.target_number);
-    const isLegacyDefault = target === 25;
-    const isOutOfRange = !Number.isInteger(target)
-        || target < MIN_TARGET_NUMBER
-        || target > MAX_TARGET_NUMBER;
-    if (isLegacyDefault || isOutOfRange) {
+    const isPreset = TRAIL_LENGTH_PRESETS.includes(target as typeof TRAIL_LENGTH_PRESETS[number]);
+    if (!isPreset) {
         profile.target_number = DEFAULT_TARGET_NUMBER;
     }
     if (profile.stats && profile.stats.identifications >= profile.target_number) {
@@ -139,6 +135,9 @@ export function initializeProfileDefaults(profile: Profile): void {
     }
     if (profile.current_instrument === 'guitar-strummed') {
         profile.current_instrument = 'guitar';
+    }
+    if (profile.chord_selection_mode !== 'adaptive') {
+        profile.chord_selection_mode = 'adaptive';
     }
 }
 

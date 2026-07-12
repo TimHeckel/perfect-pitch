@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem("pitchtrail_info_seen_v1", "true");
+  });
   await page.goto("/");
 });
 
@@ -28,4 +31,17 @@ test("next becomes the only pulsing button after an answer", async ({ page }) =>
   await page.locator("#red-flag").click();
   await expect(page.locator("#play-button")).not.toHaveClass(/ready-action/);
   await expect(page.locator("#next-chord")).toHaveClass(/ready-action/);
+});
+
+test("tapping a color before playback opens the Play first dialog", async ({ page }) => {
+  await page.locator("#red-flag").click();
+
+  const dialog = page.locator("#play-first-dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator("h2")).toHaveText("Play first");
+  await expect(page.locator("#stats-correct")).toHaveText("0");
+
+  await dialog.locator("#play-first-action").click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.locator("#play-button")).not.toHaveClass(/ready-action/);
 });
