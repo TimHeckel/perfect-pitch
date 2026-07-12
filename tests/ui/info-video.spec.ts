@@ -24,6 +24,10 @@ test("guide embeds the local Pitch Trail intro without a YouTube link", async ({
   await expect(page.locator(".guide-video figcaption")).toContainText("26 seconds");
   await expect(page.getByText("Meet the colors.", { exact: true })).toBeVisible();
   await expect(page.getByText("Ear first. Names later.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Open-source credits", { exact: true })).toBeVisible();
+  await expect(page.locator('a[href="https://github.com/paytonjjones/bsharp"]')).toContainText('BSharp');
+  await expect(page.getByText('© 2025 Payton Jones', { exact: false })).toBeVisible();
+  await expect(page.locator('a[href*="paytonjjones/bsharp/blob/master/LICENSE"]')).toContainText('Apache License 2.0');
 
   const response = await page.request.get("/static/video/pitch-trail-intro.mp4?v=20260712-3");
   expect(response.ok()).toBe(true);

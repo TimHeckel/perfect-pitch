@@ -755,6 +755,31 @@ div.selectors select.selector,
 
 #panel-area p { max-width: 70ch; margin: 0 0 18px; }
 .attribution-note { color: var(--muted); font-size: 13px; }
+.open-source-credit {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+.open-source-credit > span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.open-source-credit p { margin: 0; line-height: 1.55; }
+.open-source-credit strong { color: var(--ink); }
+.open-source-credit .credit-links {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: 750;
+}
 .panel-kicker { margin-bottom: 10px !important; }
 
 #i-infobox { align-items: center; }
