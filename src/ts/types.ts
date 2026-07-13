@@ -2,7 +2,7 @@ export interface ChordDefinition {
     name: string;
     display: string;
     chord: string;
-    notes: string[];
+    readonly notes: readonly string[];
 }
 
 export interface InstrumentDefinition {

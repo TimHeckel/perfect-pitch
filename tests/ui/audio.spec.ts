@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.clear();
+    if (!sessionStorage.getItem("preserve-audio-map-state")) localStorage.clear();
     localStorage.setItem("pitchtrail_info_seen_v1", "true");
   });
   await page.addInitScript(() => {
@@ -79,4 +79,36 @@ test("next button plays audio for new chord", async ({ page }) => {
 
   expect(state.lastCall).toBe("play");
   expect(state.paused).toBe(false);
+});
+
+test("yellow and blue keep their canonical sounds across a reload", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as any).__bsharp_test_deterministic_color =
+      localStorage.getItem("pitchtrail_test_color") ?? "yellow";
+  });
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("bsharp_state")!);
+    const profile = state.profiles[state.current_profile];
+    state.current_chord = "blue";
+    profile.current_chord = "blue";
+    profile.introduced_chords = ["red", "yellow", "blue"];
+    localStorage.setItem("bsharp_state", JSON.stringify(state));
+    localStorage.setItem("pitchtrail_test_color", "yellow");
+    sessionStorage.setItem("preserve-audio-map-state", "true");
+  });
+
+  await page.reload();
+  await expect(page.locator("#audio-bank audio.chord")).toHaveAttribute(
+    "src",
+    /static\/chords\/piano\/cfa_yellow_(short|medium|long)\.mp3$/,
+  );
+
+  await page.evaluate(() => localStorage.setItem("pitchtrail_test_color", "blue"));
+  await page.reload();
+  await expect(page.locator("#audio-bank audio.chord")).toHaveAttribute(
+    "src",
+    /static\/chords\/piano\/hdg_blue_(short|medium|long)\.mp3$/,
+  );
+
+  await expect(page.locator("#trail-level-name")).toHaveText("3-color trail");
 });
