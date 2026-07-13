@@ -100,7 +100,7 @@ test("yellow, blue, and black keep canonical sound-answer pairs across reloads",
   await page.reload();
   await expect(page.locator("#audio-bank audio.chord")).toHaveAttribute(
     "src",
-    /static\/chords\/piano\/cfa_yellow_medium\.mp3$/,
+    /static\/chords\/piano\/cfa_yellow_medium\.mp3\?v=20260713-contrast-1$/,
   );
   await expect(page.locator("#play-button")).toHaveAttribute("data-audio-color", "yellow");
   expect(await page.evaluate(() => (window as any).__bsharp_correct_color())).toBe("yellow");
@@ -109,7 +109,7 @@ test("yellow, blue, and black keep canonical sound-answer pairs across reloads",
   await page.reload();
   await expect(page.locator("#audio-bank audio.chord")).toHaveAttribute(
     "src",
-    /static\/chords\/piano\/hdg_blue_medium\.mp3$/,
+    /static\/chords\/piano\/hdg_blue_medium\.mp3\?v=20260713-contrast-1$/,
   );
   await expect(page.locator("#play-button")).toHaveAttribute("data-audio-color", "blue");
   expect(await page.evaluate(() => (window as any).__bsharp_correct_color())).toBe("blue");
@@ -118,7 +118,7 @@ test("yellow, blue, and black keep canonical sound-answer pairs across reloads",
   await page.reload();
   await expect(page.locator("#audio-bank audio.chord")).toHaveAttribute(
     "src",
-    /static\/chords\/piano\/acf_black_medium\.mp3$/,
+    /static\/chords\/piano\/acf_black_medium\.mp3\?v=20260713-contrast-1$/,
   );
   await expect(page.locator("#play-button")).toHaveAttribute("data-audio-color", "black");
   expect(await page.evaluate(() => (window as any).__bsharp_correct_color())).toBe("black");

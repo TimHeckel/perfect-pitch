@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
     getAudioFiles, getCanonicalAudioFile, getCanonicalChordAudio,
 } from '../../src/ts/audio';
-import { CHORD_DEFINITIONS, INSTRUMENTS } from '../../src/ts/data';
+import { CHORD_AUDIO_VERSION, CHORD_DEFINITIONS, INSTRUMENTS } from '../../src/ts/data';
 
 describe('canonical chord audio', () => {
+    it('versions remastered chord assets for immutable browser caches', () => {
+        expect(CHORD_AUDIO_VERSION).toBe('20260713-contrast-1');
+    });
+
     it('binds every instrument and color bucket to matching assets', () => {
         for (const instrument of INSTRUMENTS) {
             const audioFiles = getAudioFiles(instrument.id);

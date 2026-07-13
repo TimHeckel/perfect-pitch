@@ -1,5 +1,7 @@
 import { AudioFileInfo, NoteAudioFileInfo } from './types';
-import { AUDIO_FILE_LIST, INSTRUMENTS, NOTE_AUDIO_FILE_LIST, getNoteFilePrefix } from './data';
+import {
+    AUDIO_FILE_LIST, CHORD_AUDIO_VERSION, INSTRUMENTS, NOTE_AUDIO_FILE_LIST, getNoteFilePrefix,
+} from './data';
 import { randomElem } from './utils';
 
 let AUDIO_FILES: Map<string, Map<string, AudioFileInfo[]>> | null = null;
@@ -63,7 +65,7 @@ export function audioFileElem(audioFile: AudioFileInfo, onEnded: () => void): HT
         audioFile.elem.classList.add('chord');
         audioFile.elem.controls = false;
         audioFile.elem.preload = 'auto';
-        audioFile.elem.src = 'static/chords/' + audioFile.filename;
+        audioFile.elem.src = `static/chords/${audioFile.filename}?v=${CHORD_AUDIO_VERSION}`;
         audioFile.elem.onended = onEnded;
         audioFile.elem.setAttribute('aria-hidden', 'true');
         getAudioBank().appendChild(audioFile.elem);

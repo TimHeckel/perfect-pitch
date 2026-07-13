@@ -130,17 +130,17 @@ test('black introduction stops before a yellow first question begins', async ({ 
   await page.locator('#hear-new-color').click();
   await expect.poll(() => page.evaluate(() => (window as any).__audioEvents)).toContainEqual({
     type: 'play',
-    src: expect.stringMatching(/static\/chords\/piano\/acf_black_(short|medium|long)\.mp3$/),
+    src: expect.stringMatching(/static\/chords\/piano\/acf_black_medium\.mp3\?v=20260713-contrast-1$/),
   });
 
   await page.locator('#start-new-color-trail').click();
   const events = await page.evaluate(() => (window as any).__audioEvents);
   expect(events).toContainEqual({
     type: 'pause',
-    src: expect.stringMatching(/static\/chords\/piano\/acf_black_(short|medium|long)\.mp3$/),
+    src: expect.stringMatching(/static\/chords\/piano\/acf_black_medium\.mp3\?v=20260713-contrast-1$/),
   });
   expect(events.at(-1)).toEqual({
     type: 'play',
-    src: expect.stringMatching(/static\/chords\/piano\/cfa_yellow_(short|medium|long)\.mp3$/),
+    src: expect.stringMatching(/static\/chords\/piano\/cfa_yellow_medium\.mp3\?v=20260713-contrast-1$/),
   });
 });

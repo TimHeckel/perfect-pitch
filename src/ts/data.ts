@@ -1,6 +1,12 @@
 import { ChordDefinition, InstrumentDefinition, NoteInfo } from './types';
 
 /**
+ * Static chord files are served with a one-year immutable cache. Increment this
+ * only when a chord master changes so returning devices fetch the new audio.
+ */
+export const CHORD_AUDIO_VERSION = '20260713-contrast-1';
+
+/**
  * Permanent color-to-sound contract.
  *
  * Learners build long-term recall against these exact associations. Existing
