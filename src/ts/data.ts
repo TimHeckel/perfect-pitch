@@ -7,7 +7,7 @@ import { ChordDefinition, InstrumentDefinition, NoteInfo } from './types';
  * colors must never be reordered, reassigned, or re-voiced. New colors may
  * only be appended. The exact contract is locked by data and reload tests.
  */
-export const CHORD_DEFINITIONS: readonly ChordDefinition[] = Object.freeze([
+export const CHORD_DEFINITIONS: readonly ChordDefinition[] = [
     { name: "red", display: "Red", chord: "C", notes: ["C4", "E4", "G4"] },
     { name: "yellow", display: "Yellow", chord: "F/C", notes: ["C4", "F4", "A4"] },
     { name: "blue", display: "Blue", chord: "G/B", notes: ["B3", "D4", "G4"] },
@@ -22,10 +22,13 @@ export const CHORD_DEFINITIONS: readonly ChordDefinition[] = Object.freeze([
     { name: "lightgreen", display: "Light Green", chord: "E", notes: ["E4", "G#4", "B4"] },
     { name: "lightpurple", display: "Light Purple", chord: "Bb", notes: ["Bb3", "D4", "F4"] },
     { name: "skyblue", display: "Sky Blue", chord: "Eb", notes: ["Eb4", "G4", "Bb4"] },
-].map((definition) => Object.freeze({
-    ...definition,
-    notes: Object.freeze([...definition.notes]),
-})));
+];
+
+for (const definition of CHORD_DEFINITIONS) {
+    Object.freeze(definition.notes);
+    Object.freeze(definition);
+}
+Object.freeze(CHORD_DEFINITIONS);
 
 export const CHORDS_TONE: Readonly<Record<string, readonly string[]>> = Object.freeze(
     Object.fromEntries(CHORD_DEFINITIONS.map(c => [c.name, c.notes])),

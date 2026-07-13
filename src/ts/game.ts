@@ -7,7 +7,7 @@ import {
     newStats, isRecent
 } from './state';
 import { getCurrentCoefficients, updateStartTimeIfNeeded, updateStats, normalizeStatsObject } from './stats';
-import { getAudioFiles, audioFileElem, playChordFiles, preloadAudio } from './audio';
+import { getAudioFiles, audioFileElem, playChordFiles, preloadAudio, stopChordFiles } from './audio';
 import { populateFlags, updateStatsDisplay, resetCatEmoji, setCatEmoji, setChordDisplayMode, populateProfileUiElements } from './ui';
 import { canAdvanceProfile, getMasteryStatus, getNextChord, MASTERY_TRAILS_REQUIRED } from './progression';
 
@@ -133,6 +133,7 @@ export function stopCurrentAudio(): void {
         chord.pause();
         chord.currentTime = 0;
     }
+    stopChordFiles();
 }
 
 

@@ -81,3 +81,66 @@ test('a newly unlocked color is heard before it joins practice', async ({ page }
     return state.profiles[state.current_profile].introduced_chords;
   })).toContain('blue');
 });
+
+test('black introduction stops before a yellow first question begins', async ({ page }) => {
+  await page.addInitScript(() => {
+    const now = Math.floor(Date.now() / 1000);
+    localStorage.clear();
+    localStorage.setItem('pitchtrail_info_seen_v1', 'true');
+    localStorage.setItem('bsharp_state', JSON.stringify({
+      profiles: {
+        100: {
+          id: 100,
+          name: 'Guest',
+          icon: 'fa-user',
+          target_number: 10,
+          current_chord: 'black',
+          current_instrument: 'piano_1',
+          chord_selection_mode: 'adaptive',
+          introduced_chords: ['red', 'yellow', 'blue'],
+          stats: {
+            current_chord: 'black',
+            start_time: now,
+            updated_time: now,
+            correct: 0,
+            identifications: 0,
+            confusion_matrix: {},
+            notes: { correct: 0, identifications: 0, confusion_matrix: {} },
+            done: false,
+          },
+        },
+      },
+      current_chord: 'black',
+      current_profile: 100,
+    }));
+    (window as any).__bsharp_test_deterministic_color = 'yellow';
+    (window as any).__audioEvents = [];
+    HTMLMediaElement.prototype.play = function () {
+      (window as any).__audioEvents.push({ type: 'play', src: this.getAttribute('src') });
+      return Promise.resolve();
+    };
+    HTMLMediaElement.prototype.pause = function () {
+      (window as any).__audioEvents.push({ type: 'pause', src: this.getAttribute('src') });
+    };
+  });
+  await page.goto('/');
+
+  await page.locator('#play-button').click();
+  await expect(page.locator('#color-introduction-dialog h2')).toHaveText('Meet black');
+  await page.locator('#hear-new-color').click();
+  await expect.poll(() => page.evaluate(() => (window as any).__audioEvents)).toContainEqual({
+    type: 'play',
+    src: expect.stringMatching(/static\/chords\/piano\/acf_black_(short|medium|long)\.mp3$/),
+  });
+
+  await page.locator('#start-new-color-trail').click();
+  const events = await page.evaluate(() => (window as any).__audioEvents);
+  expect(events).toContainEqual({
+    type: 'pause',
+    src: expect.stringMatching(/static\/chords\/piano\/acf_black_(short|medium|long)\.mp3$/),
+  });
+  expect(events.at(-1)).toEqual({
+    type: 'play',
+    src: expect.stringMatching(/static\/chords\/piano\/cfa_yellow_(short|medium|long)\.mp3$/),
+  });
+});

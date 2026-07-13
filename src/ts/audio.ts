@@ -72,14 +72,18 @@ function getAudioBank(): HTMLElement {
 
 let _currentTrainerAudio: HTMLAudioElement | null = null;
 
+export function stopChordFiles(): void {
+    if (!_currentTrainerAudio) return;
+    _currentTrainerAudio.pause();
+    _currentTrainerAudio.currentTime = 0;
+    _currentTrainerAudio = null;
+}
+
 export function playChordFiles(instrument: string, color: string, onEnded: () => void): void {
     const audioFiles = getAudioFiles(instrument);
     const files = audioFiles.get(color);
     if (files) {
-        if (_currentTrainerAudio) {
-            _currentTrainerAudio.pause();
-            _currentTrainerAudio.currentTime = 0;
-        }
+        stopChordFiles();
         const audioFile = randomElem(files);
         const elem = audioFileElem(audioFile, onEnded);
         _currentTrainerAudio = elem;

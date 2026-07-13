@@ -3,6 +3,7 @@ import {
     CHORD_DEFINITIONS, CHORDS_TONE, FIRST_BLACK_INDEX,
     AUDIO_FILE_LIST, INSTRUMENTS, getNoteFilePrefix, computeAllNotes
 } from '../../src/ts/data';
+import { readChordDefinitions } from '../../sample-source/audio/chord-definitions';
 
 describe('chord data integrity', () => {
     it('locks the permanent color-to-sound contract', () => {
@@ -29,6 +30,10 @@ describe('chord data integrity', () => {
         expect(Object.isFrozen(CHORD_DEFINITIONS[1])).toBe(true);
         expect(Object.isFrozen(CHORD_DEFINITIONS[1].notes)).toBe(true);
         expect(Object.isFrozen(CHORDS_TONE)).toBe(true);
+    });
+
+    it('keeps the audio build pipeline on the same canonical contract', () => {
+        expect(readChordDefinitions('src/ts/data.ts')).toEqual(CHORD_DEFINITIONS);
     });
 
     it('has 14 chord definitions', () => {
