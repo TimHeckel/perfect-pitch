@@ -81,7 +81,7 @@ test("next button plays audio for new chord", async ({ page }) => {
   expect(state.paused).toBe(false);
 });
 
-test("yellow and blue keep their canonical sounds across a reload", async ({ page }) => {
+test("yellow, blue, and black keep canonical sound-answer pairs across reloads", async ({ page }) => {
   await page.addInitScript(() => {
     (window as any).__bsharp_test_deterministic_color =
       localStorage.getItem("pitchtrail_test_color") ?? "yellow";
@@ -89,9 +89,9 @@ test("yellow and blue keep their canonical sounds across a reload", async ({ pag
   await page.evaluate(() => {
     const state = JSON.parse(localStorage.getItem("bsharp_state")!);
     const profile = state.profiles[state.current_profile];
-    state.current_chord = "blue";
-    profile.current_chord = "blue";
-    profile.introduced_chords = ["red", "yellow", "blue"];
+    state.current_chord = "black";
+    profile.current_chord = "black";
+    profile.introduced_chords = ["red", "yellow", "blue", "black"];
     localStorage.setItem("bsharp_state", JSON.stringify(state));
     localStorage.setItem("pitchtrail_test_color", "yellow");
     sessionStorage.setItem("preserve-audio-map-state", "true");
@@ -100,15 +100,28 @@ test("yellow and blue keep their canonical sounds across a reload", async ({ pag
   await page.reload();
   await expect(page.locator("#audio-bank audio.chord")).toHaveAttribute(
     "src",
-    /static\/chords\/piano\/cfa_yellow_(short|medium|long)\.mp3$/,
+    /static\/chords\/piano\/cfa_yellow_medium\.mp3$/,
   );
+  await expect(page.locator("#play-button")).toHaveAttribute("data-audio-color", "yellow");
+  expect(await page.evaluate(() => (window as any).__bsharp_correct_color())).toBe("yellow");
 
   await page.evaluate(() => localStorage.setItem("pitchtrail_test_color", "blue"));
   await page.reload();
   await expect(page.locator("#audio-bank audio.chord")).toHaveAttribute(
     "src",
-    /static\/chords\/piano\/hdg_blue_(short|medium|long)\.mp3$/,
+    /static\/chords\/piano\/hdg_blue_medium\.mp3$/,
   );
+  await expect(page.locator("#play-button")).toHaveAttribute("data-audio-color", "blue");
+  expect(await page.evaluate(() => (window as any).__bsharp_correct_color())).toBe("blue");
 
-  await expect(page.locator("#trail-level-name")).toHaveText("3-color trail");
+  await page.evaluate(() => localStorage.setItem("pitchtrail_test_color", "black"));
+  await page.reload();
+  await expect(page.locator("#audio-bank audio.chord")).toHaveAttribute(
+    "src",
+    /static\/chords\/piano\/acf_black_medium\.mp3$/,
+  );
+  await expect(page.locator("#play-button")).toHaveAttribute("data-audio-color", "black");
+  expect(await page.evaluate(() => (window as any).__bsharp_correct_color())).toBe("black");
+
+  await expect(page.locator("#trail-level-name")).toHaveText("4-color trail");
 });

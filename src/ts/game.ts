@@ -7,7 +7,10 @@ import {
     newStats, isRecent
 } from './state';
 import { getCurrentCoefficients, updateStartTimeIfNeeded, updateStats, normalizeStatsObject } from './stats';
-import { getAudioFiles, audioFileElem, playChordFiles, preloadAudio, stopChordFiles } from './audio';
+import {
+    getCanonicalChordAudio, audioFileElem,
+    playChordFiles, preloadAudio, stopChordFiles,
+} from './audio';
 import { populateFlags, updateStatsDisplay, resetCatEmoji, setCatEmoji, setChordDisplayMode, populateProfileUiElements } from './ui';
 import { canAdvanceProfile, getMasteryStatus, getNextChord, MASTERY_TRAILS_REQUIRED } from './progression';
 
@@ -16,7 +19,14 @@ let _CHORDS_ON = false;
 export let _CORRECT_COLOR: string | null = null;
 let _SELECTED_ELEM: HTMLElement | null = null;
 let _CORRECT_ELEM: HTMLElement | null = null;
-let _CURRENT_AUDIO: [HTMLAudioElement, number] | null = null;
+interface CurrentAudio {
+    element: HTMLAudioElement;
+    duration: number;
+    color: string;
+    filename: string;
+}
+
+let _CURRENT_AUDIO: CurrentAudio | null = null;
 let _AUDIO_PLAYED = false;
 let _EMOJI_LOCK = false;
 let _CURRENT_COEFFICIENTS: number[] | null = null;
@@ -129,7 +139,7 @@ function warmLessonAudio(): void {
 
 export function stopCurrentAudio(): void {
     if (_CURRENT_AUDIO) {
-        const [chord] = _CURRENT_AUDIO;
+        const chord = _CURRENT_AUDIO.element;
         chord.pause();
         chord.currentTime = 0;
     }
@@ -169,16 +179,31 @@ export function populateAudio(): void {
     selectNewColor();
     stopCurrentAudio();
 
-    const audioFiles = getAudioFiles(getCurrentProfile().current_instrument);
-    const files = audioFiles.get(_CORRECT_COLOR!);
-    if (files) {
-        const newAudioFile = randomElem(files);
-        const afElem = audioFileElem(newAudioFile, onAudioEnded);
-        _CURRENT_AUDIO = [afElem, afElem.duration];
-    }
+    const newAudioFile = getCanonicalChordAudio(
+        getCurrentProfile().current_instrument,
+        _CORRECT_COLOR!,
+    );
+    _CURRENT_AUDIO = null;
+    // Bind correctness to the validated asset that will actually play. This
+    // keeps the marked answer and the heard sound atomic across every route.
+    _CORRECT_COLOR = newAudioFile.color;
+    const afElem = audioFileElem(newAudioFile, onAudioEnded);
+    _CURRENT_AUDIO = {
+        element: afElem,
+        duration: afElem.duration,
+        color: newAudioFile.color,
+        filename: newAudioFile.filename,
+    };
 
     const playButton = document.getElementById('play-button');
     if (playButton) {
+        if (_CURRENT_AUDIO) {
+            playButton.dataset.audioColor = _CURRENT_AUDIO.color;
+            playButton.dataset.audioFile = _CURRENT_AUDIO.filename;
+        } else {
+            delete playButton.dataset.audioColor;
+            delete playButton.dataset.audioFile;
+        }
         playButton.classList.remove('deactivated');
         playButton.classList.add('ready-action');
     }
@@ -195,7 +220,7 @@ export function playAudio(): void {
 
     startQuestionClock();
     playButton?.classList.remove('ready-action');
-    const [chord, duration] = _CURRENT_AUDIO;
+    const { element: chord, duration } = _CURRENT_AUDIO;
     stopCurrentAudio();
     const safeDuration = isNaN(duration) ? 0.8 : duration;
     setPlayedAfter(safeDuration * 0.8);
@@ -228,27 +253,28 @@ export function selectFlagWrapper(wrapperElem: HTMLElement): void {
     if (getCurrentProfile().stats.identifications >= getCurrentTargetNumber()) return;
 
     const chosenColor = wrapperElem.dataset.color;
+    const correctColor = _CURRENT_AUDIO?.color ?? _CORRECT_COLOR;
     const elem = wrapperElem.querySelector(':scope > .flag') as HTMLElement | null;
-    if (!chosenColor || !elem) return;
+    if (!chosenColor || !correctColor || !elem) return;
     stopQuestionClock();
 
     const flagHolder = document.getElementById('flag-holder')!;
 
     _EMOJI_LOCK = true;
     updateStartTimeIfNeeded();
-    updateStats(_CORRECT_COLOR!, chosenColor);
+    updateStats(correctColor, chosenColor);
     _CURRENT_COEFFICIENTS = null;
     updateStatsDisplay();
     const reachedTarget = getCurrentProfile().stats.identifications >= getCurrentTargetNumber();
 
-    const isCorrect = chosenColor === _CORRECT_COLOR;
+    const isCorrect = chosenColor === correctColor;
     elem.classList.add('flag-selected');
     if (isCorrect) {
         elem.classList.add('flag-correct');
         setCatEmoji(6);
     } else {
         elem.classList.add('flag-incorrect');
-        _CORRECT_ELEM = flagHolder.querySelector(`div[data-color="${_CORRECT_COLOR}"]>div.flag`)!;
+        _CORRECT_ELEM = flagHolder.querySelector(`div[data-color="${correctColor}"]>div.flag`)!;
         if (_CORRECT_ELEM) _CORRECT_ELEM.classList.add('flag-correct');
         setCatEmoji(5);
     }

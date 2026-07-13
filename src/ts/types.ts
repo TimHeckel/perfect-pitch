@@ -12,11 +12,11 @@ export interface InstrumentDefinition {
 }
 
 export interface AudioFileInfo {
-    filename: string;
-    instrument: string;
-    color: string;
-    chord: string;
-    ext: string;
+    readonly filename: string;
+    readonly instrument: string;
+    readonly color: string;
+    readonly chord: string;
+    readonly ext: string;
     elem: HTMLAudioElement | null;
 }
 

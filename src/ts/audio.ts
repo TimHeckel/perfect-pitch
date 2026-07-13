@@ -8,7 +8,7 @@ function getInstrumentIdForPath(path: string): string {
     return INSTRUMENTS.find(instrument => instrument.chordPath === path)?.id || INSTRUMENTS[0].id;
 }
 
-export function getAudioFiles(instrument: string): Map<string, AudioFileInfo[]> {
+export function getAudioFiles(instrument: string): ReadonlyMap<string, readonly AudioFileInfo[]> {
     if (AUDIO_FILES === null) {
         AUDIO_FILES = new Map();
 
@@ -42,6 +42,19 @@ export function getAudioFiles(instrument: string): Map<string, AudioFileInfo[]> 
         }
     }
     return AUDIO_FILES.get(instrument) || AUDIO_FILES.get(INSTRUMENTS[0].id)!;
+}
+
+export function getCanonicalAudioFile(files: readonly AudioFileInfo[]): AudioFileInfo | undefined {
+    return files.find(({ filename }) => filename.endsWith('_medium.mp3')) ?? files[0];
+}
+
+export function getCanonicalChordAudio(instrument: string, color: string): AudioFileInfo {
+    const audioFile = getCanonicalAudioFile(getAudioFiles(instrument).get(color) ?? []);
+    if (!audioFile) throw new Error(`Missing canonical audio for ${instrument}:${color}`);
+    if (audioFile.color !== color) {
+        throw new Error(`Color/audio invariant violated: requested ${color}, received ${audioFile.color}`);
+    }
+    return audioFile;
 }
 
 export function audioFileElem(audioFile: AudioFileInfo, onEnded: () => void): HTMLAudioElement {
@@ -80,24 +93,15 @@ export function stopChordFiles(): void {
 }
 
 export function playChordFiles(instrument: string, color: string, onEnded: () => void): void {
-    const audioFiles = getAudioFiles(instrument);
-    const files = audioFiles.get(color);
-    if (files) {
-        stopChordFiles();
-        const audioFile = randomElem(files);
-        const elem = audioFileElem(audioFile, onEnded);
-        _currentTrainerAudio = elem;
-        elem.play();
-    }
+    const audioFile = getCanonicalChordAudio(instrument, color);
+    stopChordFiles();
+    const elem = audioFileElem(audioFile, onEnded);
+    _currentTrainerAudio = elem;
+    elem.play();
 }
 
 export function preloadAudio(instrument: string, color: string, onEnded: () => void): void {
-    const audioFiles = getAudioFiles(instrument).get(color);
-    if (audioFiles) {
-        for (const audioFile of audioFiles) {
-            audioFileElem(audioFile, onEnded);
-        }
-    }
+    audioFileElem(getCanonicalChordAudio(instrument, color), onEnded);
 }
 
 // --- Single note audio ---
